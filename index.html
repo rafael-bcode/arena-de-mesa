@@ -871,7 +871,7 @@ const Pong = (() => {
   // Real-size table (metres). The ball flies under gravity, bounces on the table and can hit the net; there are no walls.
   // Each paddle moves sideways and up/down with the pointer; its depth follows the ball by itself (wheel/Q-E nudge it).
   const TL = 1.37, TW = .7625, NETH = .1525, BR = .02, PR = .085, HIT = PR + BR + .03, GRAV = 9.8, WIN = 11;
-  const PX = 1.5, PYMIN = .03, PYMAX = .7, ZMIN = .2, ZMAX = 2.4, PSPD = 9, QSPD = 4.2;
+  const PX = 1.5, PYMIN = .03, PYMAX = .7, ZMIN = .2, ZMAX = 2.1, PSPD = 9, QSPD = 4.2, REFQ = 1.6;
   const g = { id: 'pong', realtime: true, planeY: 0.13, fxY: 0.0, halfW: TW, cam: { h: 1.25, d: 3.05, lz: -0.3 }, ghostable: true,
     help: 'Mouse ou dedo: a raquete vai para os lados e para cima/baixo (setas também) · a profundidade acompanha a bola (roda do mouse ou Q/E ajustam) · a bola tem que quicar na mesa do adversário · 11 pontos.' };
   let m = {};
@@ -989,9 +989,9 @@ const Pong = (() => {
     const d = sgn(side), q0 = num(ctl.pq, V.p[side][2]);
     ctl.dq = clamp(num(ctl.dq, 0) + ((keys.qe || 0) * 1.2 * dt), -.8, .8);
     const qt = clamp(autoDepth(V, side) + ctl.dq, ZMIN, ZMAX);
-    // pointer → a vertical plane at the paddle's depth: screen left/right and up/down move the blade
+    // pointer → a fixed vertical reference plane, so the screen→blade mapping never shifts while the depth follows the ball
     if (ptr.valid) {
-      ray.setFromCamera(ndc, camera); vplane.constant = -d * q0;
+      ray.setFromCamera(ndc, camera); vplane.constant = -d * REFQ;
       if (ray.ray.intersectPlane(vplane, vhit)) { ctl.x = vhit.x; ctl.y = vhit.y; }
     }
     const kx = ((keys.right ? 1 : 0) - (keys.left ? 1 : 0)) * d, ky = (keys.up ? 1 : 0) - (keys.down ? 1 : 0);
@@ -5779,6 +5779,7 @@ function frame(now) {
   requestAnimationFrame(frame);
 }
 
+window.__arena = { state: () => S, view: () => V, ctl: () => ctl, game: () => G && G.id, camera };   // read-only peek for automated tests
 markCards();
 buildGame(selGame); newMatch(prefSeats(selGame));
 // opened from a shared link: join that room right away
