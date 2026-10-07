@@ -212,7 +212,7 @@ input.code{font:700 18px var(--ui);letter-spacing:.38em;text-transform:uppercase
       <button data-cat="real" aria-pressed="false">Tempo real <i>2</i></button>
       <button data-cat="turnos" aria-pressed="false">Por turnos <i>2</i></button>
       <button data-cat="tabuleiro" aria-pressed="false">Tabuleiro <i>3</i></button>
-      <button data-cat="baralho" aria-pressed="false">Baralho <i>2</i></button>
+      <button data-cat="baralho" aria-pressed="false">Baralho <i>3</i></button>
     </div>
     <div id="cards">
     <section class="cat" data-cat="real">
@@ -269,9 +269,13 @@ input.code{font:700 18px var(--ui);letter-spacing:.38em;text-transform:uppercase
         <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"><rect x="12" y="8" width="24" height="33" rx="3"/><circle cx="24" cy="20" r="4"/><circle cx="24" cy="29" r="5"/></svg>
         <b>Oito Maluco</b><small>Combine naipe ou número. O 8 é curinga e muda o naipe. Zere a mão primeiro.</small>
       </button>
+      <button class="card" data-game="poker" style="--acc:#c7b8ff" aria-pressed="false">
+        <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"><ellipse cx="17" cy="33" rx="10" ry="4"/><path d="M7 33v-4c0-2 4-4 10-4s10 2 10 4v4"/><ellipse cx="17" cy="29" rx="10" ry="4"/><rect x="26" y="8" width="15" height="21" rx="2" transform="rotate(12 33 18)"/></svg>
+        <b>Poker</b><small>Texas Hold'em mano a mano. Fichas, blinds, all-in e showdown.</small>
+      </button>
       <div class="card soon" aria-disabled="true">
         <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"><circle cx="24" cy="24" r="14"/><circle cx="24" cy="24" r="7" stroke-dasharray="3 3"/></svg>
-        <b>Em breve</b><small>Poker Texas Hold'em e Buraco.</small>
+        <b>Em breve</b><small>Buraco.</small>
       </div>
       </div>
     </section>
@@ -368,7 +372,7 @@ const A = (a, n, d = 0) => { const o = []; for (let i = 0; i < n; i++) o.push(nu
 const PHASE = v => ['count', 'play', 'over'].includes(v) ? v : 'count';
 const angDiff = d => Math.atan2(Math.sin(d), Math.cos(d));
 const COLS = ['#38b6ff', '#ff4f6d'];
-const GAME_NAMES = { pong: 'Ping-pong', toto: 'Totó', pool: 'Sinuca', botao: 'Futebol de botão', damas: 'Damas', xadrez: 'Xadrez', gamao: 'Gamão', oito: 'Oito Maluco', truco: 'Truco' };
+const GAME_NAMES = { pong: 'Ping-pong', toto: 'Totó', pool: 'Sinuca', botao: 'Futebol de botão', damas: 'Damas', xadrez: 'Xadrez', gamao: 'Gamão', oito: 'Oito Maluco', truco: 'Truco', poker: 'Poker' };
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 // CPU difficulty: 0 fácil, 1 normal, 2 difícil — each game's cpu() reads its knobs from here
 let diff = 1;
@@ -689,6 +693,7 @@ function playEv(e) {
       break;
     case 'check': if (!quiet) { tone(880, .12, { type: 'triangle', vol: .09 }); tone(660, .16, { type: 'triangle', vol: .08, delay: .12 }); } break;
     case 'card': if (!quiet) { noise(.06, .2, pan, 4200); tone(900, .03, { type: 'triangle', vol: .03, pan, delay: .02 }); } break;
+    case 'chip': if (!quiet) for (let i = 0; i < 4; i++) tone(rnd(2600, 3600), .02, { type: 'triangle', vol: .05, pan, delay: i * .045 + rnd(0, .02) }); break;
     case 'truco':
       spawnBurst(0, 0, col, 40, 1.1, y + .05, 1.1);
       if (!quiet) { tone(330, .12, { type: 'sawtooth', vol: .07, slide: 220 }); tone(520, .2, { type: 'square', vol: .06, delay: .12, slide: 160 }); noise(.25, .15, 0, 900); shake = .3; }
@@ -2835,7 +2840,262 @@ const Truco = (() => {
   return g;
 })();
 
-const GAMES = { pong: Pong, toto: Toto, pool: Pool, botao: Botao, damas: Damas, xadrez: Xadrez, gamao: Gamao, oito: Oito, truco: Truco };
+// ======================================================================
+// GAME 10: POKER (Texas Hold'em, mano a mano)
+// ======================================================================
+const Poker = (() => {
+  const START = 1000, STREETS = ['Pré-flop', 'Flop', 'Turn', 'River'];
+  const HAND_NAMES = ['carta alta', 'par', 'dois pares', 'trinca', 'sequência', 'flush', 'full house', 'quadra', 'straight flush', 'royal flush'];
+  const g = { id: 'poker', realtime: false, planeY: TY, fxY: TY, halfW: .6, cam: { h: 1.02, d: .9, lz: .03 },
+    help: 'Texas Hold\'em mano a mano · passe, pague, aumente ou desista pelos botões · os blinds dobram a cada 8 mãos · quem ficar sem fichas perde.' };
+  let m = {};
+  const val = id => cRank(id) === 0 ? 14 : cRank(id) + 1;
+  // best 5 of 5–7 cards → [category, tiebreakers…], compared lexicographically
+  function handValue(cards) {
+    const vs = cards.map(val), bySuit = [[], [], [], []];
+    cards.forEach((id, i) => bySuit[cSuit(id)].push(vs[i]));
+    const straightHigh = list => {
+      const u = [...new Set(list)].sort((a, b) => b - a); if (u[0] === 14) u.push(1);
+      let run = 1; for (let i = 1; i < u.length; i++) { if (u[i] === u[i - 1] - 1) { if (++run >= 5) return u[i] + 4; } else run = 1; }
+      return 0;
+    };
+    for (const su of bySuit) if (su.length >= 5) { const sh = straightHigh(su); if (sh) return [8, sh]; }
+    const cnt = {}; vs.forEach(v => { cnt[v] = (cnt[v] || 0) + 1; });
+    const groups = Object.entries(cnt).map(([v, c]) => [c, +v]).sort((a, b) => b[0] - a[0] || b[1] - a[1]);
+    const desc = vs.slice().sort((a, b) => b - a), kick = (ex, n) => desc.filter(v => !ex.includes(v)).slice(0, n);
+    if (groups[0][0] === 4) return [7, groups[0][1], ...kick([groups[0][1]], 1)];
+    if (groups[0][0] === 3 && groups[1] && groups[1][0] >= 2) return [6, groups[0][1], groups[1][1]];
+    const fl = bySuit.find(su => su.length >= 5); if (fl) return [5, ...fl.slice().sort((a, b) => b - a).slice(0, 5)];
+    const sh = straightHigh(vs); if (sh) return [4, sh];
+    if (groups[0][0] === 3) return [3, groups[0][1], ...kick([groups[0][1]], 2)];
+    if (groups[0][0] === 2 && groups[1] && groups[1][0] === 2) return [2, groups[0][1], groups[1][1], ...kick([groups[0][1], groups[1][1]], 1)];
+    if (groups[0][0] === 2) return [1, groups[0][1], ...kick([groups[0][1]], 3)];
+    return [0, ...desc.slice(0, 5)];
+  }
+  const cmp = (a, b) => { for (let i = 0; i < Math.max(a.length, b.length); i++) { const d = (a[i] || 0) - (b[i] || 0); if (d) return d; } return 0; };
+  const handName = v => v[0] === 8 && v[1] === 14 ? HAND_NAMES[9] : HAND_NAMES[v[0]];
+  const blinds = S => { const bb = 20 * Math.pow(2, Math.floor((S.hn - 1) / 8)); return [bb / 2, bb]; };
+  const post = (S, k, a) => { a = Math.min(a, S.stacks[k]); S.stacks[k] -= a; S.bet[k] += a; };
+  function startHand(S) {
+    S.hn++; S.dealer = 1 - S.dealer;
+    const deck = shuffle([...Array(52).keys()]);
+    S.hole = [[deck.pop(), deck.pop()], [deck.pop(), deck.pop()]]; S.deck = deck; S.board = []; S.street = 0; S.pot = 0; S.bet = [0, 0];
+    const [sb, bb] = blinds(S); post(S, S.dealer, sb); post(S, 1 - S.dealer, bb);
+    S.minRaise = bb; S.turn = S.dealer; S.acted = [false, false]; S.ph = 'bet'; S.tm = 0; S.res = null; S.last = null; S.tn++;
+    ev(S, 'card', 0, 0, 1, -1);
+    if (S.stacks[S.turn] === 0) S.turn = 1 - S.turn;
+    if (streetDone(S)) closeStreet(S);
+  }
+  g.init = () => { const S = { stacks: [START, START], dealer: Math.random() < .5 ? 0 : 1, hn: 0, tn: 0, mid: rid(), win: null }; startHand(S); return S; };
+  function streetDone(S) {
+    const allin = k => S.stacks[k] === 0;
+    if (allin(0) && allin(1)) return true;
+    if (S.acted[0] && S.acted[1] && S.bet[0] === S.bet[1]) return true;
+    for (const k of [0, 1]) if (allin(k) && S.bet[1 - k] >= S.bet[k] && (S.acted[1 - k] || S.bet[1 - k] > S.bet[k])) return true;
+    return false;
+  }
+  function closeStreet(S) {
+    const hi = S.bet[0] > S.bet[1] ? 0 : 1, extra = S.bet[hi] - S.bet[1 - hi];
+    if (extra > 0) { S.stacks[hi] += extra; S.bet[hi] -= extra; }   // the uncalled part goes back
+    S.pot += S.bet[0] + S.bet[1]; S.bet = [0, 0]; S.tn++;
+    if (S.street === 3) return showdown(S);
+    if (S.stacks[0] === 0 || S.stacks[1] === 0) { S.ph = 'run'; S.tm = 0; return; }
+    nextStreet(S);
+  }
+  function nextStreet(S) {
+    S.street++; S.board.push(...S.deck.splice(-(S.street === 1 ? 3 : 1)));
+    S.acted = [false, false]; S.minRaise = blinds(S)[1]; S.turn = 1 - S.dealer; S.last = null; S.tn++;
+    ev(S, 'card', 0, 0, 1, -1);
+  }
+  function award(S, w) {
+    if (w === 2) { const h = Math.floor(S.pot / 2); S.stacks[0] += h; S.stacks[1] += S.pot - h; } else S.stacks[w] += S.pot;
+    S.pot = 0; ev(S, 'chip', 0, w === 2 ? 0 : sgnS(w) * .3, 1, w === 2 ? -1 : w);
+  }
+  function showdown(S) {
+    const v0 = handValue(S.hole[0].concat(S.board)), v1 = handValue(S.hole[1].concat(S.board)), c = cmp(v0, v1), w = c > 0 ? 0 : c < 0 ? 1 : 2;
+    award(S, w); S.res = { w, how: 'show', names: [handName(v0), handName(v1)] }; S.ph = 'show'; S.tm = 0; S.tn++;
+  }
+  function advance(S) {
+    if (streetDone(S)) return closeStreet(S);
+    S.turn = 1 - S.turn; if (S.stacks[S.turn] === 0) S.turn = 1 - S.turn;
+    S.tn++;
+  }
+  g.step = (S, dt, i0, i1) => {
+    if (S.win != null) return;
+    if (S.ph === 'run') { S.tm += dt; if (S.tm > 1.2) { S.tm = 0; if (S.street < 3) { nextStreet(S); S.ph = 'run'; } else showdown(S); } return; }
+    if (S.ph === 'show') { S.tm += dt; if (S.tm > 3.6) { if (!S.stacks[0] || !S.stacks[1]) S.win = S.stacks[0] ? 0 : 1; else startHand(S); } return; }
+    const k = S.turn, o = 1 - k, inp = k === 0 ? i0 : i1, a = inp && inp.act;
+    if (!Array.isArray(a) || a[0] !== S.mid || a[1] !== S.tn) return;
+    const toCall = Math.max(0, S.bet[o] - S.bet[k]), kind = a[2];
+    if (kind === 'fold') {
+      S.pot += S.bet[0] + S.bet[1]; S.bet = [0, 0]; award(S, o);
+      S.res = { w: o, how: 'fold' }; S.last = [k, 'fold', 0]; S.ph = 'show'; S.tm = 0; S.tn++; return;
+    }
+    if (kind === 'check') { if (toCall) return; S.last = [k, 'check', 0]; }
+    else if (kind === 'call') { if (!toCall) return; const c = Math.min(toCall, S.stacks[k]); S.stacks[k] -= c; S.bet[k] += c; S.last = [k, S.stacks[k] ? 'call' : 'allin', S.bet[k]]; }
+    else if (kind === 'raise') {
+      const maxTo = S.bet[k] + S.stacks[k], to = Math.min(Math.round(num(a[3], 0)), maxTo);
+      if (S.stacks[o] === 0 || to <= S.bet[o] || (to < S.bet[o] + S.minRaise && to !== maxTo)) return;
+      S.minRaise = Math.max(S.minRaise, to - S.bet[o]); S.stacks[k] -= to - S.bet[k]; S.bet[k] = to; S.acted[o] = false;
+      S.last = [k, to === maxTo ? 'allin' : 'raise', to];
+    } else return;
+    S.acted[k] = true;
+    if (kind !== 'check') ev(S, 'chip', 0, sgnS(k) * .2, 1, k);
+    advance(S);
+  };
+  // ---- CPU: Monte Carlo equity against a random hand, then pot odds ----
+  function equity(S, k, sims) {
+    const known = new Set(S.hole[k].concat(S.board)), rest = [...Array(52).keys()].filter(c => !known.has(c)), need = 2 + 5 - S.board.length;
+    let w = 0;
+    for (let i = 0; i < sims; i++) {
+      for (let j = 0; j < need; j++) { const r = j + Math.floor(Math.random() * (rest.length - j)); const t = rest[j]; rest[j] = rest[r]; rest[r] = t; }
+      const board = S.board.concat(rest.slice(2, need)), c = cmp(handValue(S.hole[k].concat(board)), handValue(rest.slice(0, 2).concat(board)));
+      w += c > 0 ? 1 : c === 0 ? .5 : 0;
+    }
+    return w / sims;
+  }
+  function decide(S, k) {
+    const o = 1 - k, toCall = Math.max(0, S.bet[o] - S.bet[k]), pot = S.pot + S.bet[0] + S.bet[1], maxTo = S.bet[k] + S.stacks[k];
+    const eq = equity(S, k, DIFF([80, 250, 500])) + rnd(-1, 1) * DIFF([.15, .06, .02]);
+    const odds = toCall / (pot + toCall || 1), canRaise = S.stacks[o] > 0 && maxTo > S.bet[o], r = Math.random();
+    const raiseTo = f => ['raise', clamp(S.bet[o] + Math.max(S.minRaise, Math.round((pot + toCall) * f)), Math.min(maxTo, S.bet[o] + S.minRaise), maxTo)];
+    if (canRaise && eq > .82) return r < .35 && S.street >= 2 ? ['raise', maxTo] : raiseTo(.9);
+    if (canRaise && eq > .64 && r < .55) return raiseTo(.5);
+    if (canRaise && !toCall && r < DIFF([0, .08, .12])) return raiseTo(.5);
+    if (!toCall) return ['check'];
+    if (eq > odds + DIFF([0, .04, .06]) || (toCall <= blinds(S)[1] && eq > .3)) return ['call'];
+    return ['fold'];
+  }
+  g.cpu = (S, side, dt, mem) => {
+    if (S.win != null || S.ph !== 'bet' || S.turn !== side) return {};
+    if (mem.tn !== S.tn || mem.mid !== S.mid) { mem.tn = S.tn; mem.mid = S.mid; mem.t = 0; mem.dec = null; }
+    mem.t += dt; if (mem.t < 1.1) return {};
+    if (!mem.dec) mem.dec = decide(S, side);
+    return { act: [S.mid, S.tn].concat(mem.dec) };
+  };
+  g.local = (V, side) => {
+    if (ctl.tn !== V.tn || ctl.mid !== V.mid) { ctl.tn = V.tn; ctl.mid = V.mid; ctl.out = {}; }
+    const act = ctl.act; ctl.act = null;
+    if (act && V.ph === 'bet' && V.turn === side && V.win == null) ctl.out = { act: act[0] === 'r' ? [V.mid, V.tn, 'raise', +act.slice(1)] : [V.mid, V.tn, act] };
+    return ctl.out;
+  };
+  g.actions = (V, vs) => {
+    if (vs == null || V.win != null || V.ph !== 'bet' || V.turn !== vs) return [];
+    const k = vs, o = 1 - k, toCall = Math.max(0, V.bet[o] - V.bet[k]), maxTo = V.bet[k] + V.stacks[k], r = [];
+    if (toCall) r.push({ id: 'fold', label: 'Desistir', ghost: true });
+    r.push(toCall ? { id: 'call', label: toCall >= V.stacks[k] ? 'Pagar all-in (' + V.stacks[k] + ')' : 'Pagar ' + toCall } : { id: 'check', label: 'Passar' });
+    if (V.stacks[o] > 0 && maxTo > V.bet[o]) {
+      const pot = V.pot + V.bet[0] + V.bet[1] + toCall, minTo = Math.min(maxTo, V.bet[o] + V.minRaise), seen = new Set();
+      for (const [n, to0] of [['min', minTo], ['half', V.bet[o] + Math.round(pot / 2)], ['pot', V.bet[o] + pot]]) {
+        const to = clamp(to0, minTo, maxTo); if (to >= maxTo || seen.has(to)) continue; seen.add(to);
+        r.push({ id: 'r' + to, ghost: true, label: n === 'min' ? (V.bet[o] ? 'Aumentar p/ ' : 'Apostar ') + to : n === 'half' ? '½ pote (' + to + ')' : 'Pote (' + to + ')' });
+      }
+      r.push({ id: 'r' + maxTo, label: 'All-in (' + maxTo + ')', pink: true });
+    }
+    return r;
+  };
+  const showHoles = S => S.ph === 'show' && S.res && S.res.how === 'show';
+  g.pack = S => ({ stacks: S.stacks, dealer: S.dealer, hn: S.hn, hole: [hidePack(S.hole[0], showHoles(S)), S.hole[1]], board: S.board, street: S.street, pot: S.pot, bet: S.bet,
+    minRaise: S.minRaise, turn: S.turn, acted: S.acted, ph: S.ph, tm: r3(S.tm), res: S.res, last: S.last, tn: S.tn, mid: S.mid, win: S.win });
+  g.unpack = d => {
+    const R = d.res && typeof d.res === 'object' ? d.res : null, L = Array.isArray(d.last) ? d.last : null;
+    return {
+      stacks: A(d.stacks, 2).map(v => Math.max(0, Math.round(v))), dealer: d.dealer === 1 ? 1 : 0, hn: num(d.hn, 1),
+      hole: [unpackIds(d.hole && d.hole[0], 52).slice(0, 2), unpackIds(d.hole && d.hole[1], 52).slice(0, 2)], board: unpackIds(d.board, 52).filter(v => v >= 0).slice(0, 5),
+      street: sanInt(d.street, 0, 3, 0), pot: Math.max(0, num(d.pot, 0)), bet: A(d.bet, 2).map(v => Math.max(0, v)), minRaise: num(d.minRaise, 20),
+      turn: d.turn === 1 ? 1 : 0, acted: [!!(d.acted && d.acted[0]), !!(d.acted && d.acted[1])], ph: ['bet', 'run', 'show'].includes(d.ph) ? d.ph : 'bet', tm: num(d.tm, 0),
+      res: R ? { w: sanInt(R.w, 0, 2, 2), how: R.how === 'fold' ? 'fold' : 'show', names: Array.isArray(R.names) ? R.names.slice(0, 2).map(x => String(x).slice(0, 20)) : ['', ''] } : null,
+      last: L ? [L[0] === 1 ? 1 : 0, String(L[1]).slice(0, 8), num(L[2], 0)] : null, tn: num(d.tn, 0), mid: d.mid, win: d.win === 0 || d.win === 1 ? d.win : null
+    };
+  };
+  // ---- table: board, holes, clay chips stacked by denomination, dealer button ----
+  const DEN = [[500, '#6c35b0'], [100, '#1d1d24'], [25, '#1f8a4c'], [5, '#c2232f'], [1, '#ece6d8']];
+  const CR2 = .023, CHH = .0068;
+  g.build = sc => {
+    buildCardTable(sc);
+    const chipMat = DEN.map(([d, col]) => {
+      const side = canvasTex(128, 16, (c, w, h) => { c.fillStyle = col; c.fillRect(0, 0, w, h); c.fillStyle = '#f4efe2'; for (let i = 0; i < 6; i++) c.fillRect(i * w / 6 + 4, 0, w / 12, h); });
+      const top = canvasTex(64, 64, (c, w) => {
+        c.fillStyle = col; c.fillRect(0, 0, w, w);
+        c.strokeStyle = '#f4efe2'; c.lineWidth = 5; c.setLineDash([7, 6]); c.beginPath(); c.arc(32, 32, 26, 0, TAU); c.stroke(); c.setLineDash([]);
+        c.fillStyle = d === 1 ? '#c9b98f' : 'rgba(255,255,255,.18)'; c.beginPath(); c.arc(32, 32, 15, 0, TAU); c.fill();
+        c.fillStyle = d === 1 ? '#3a2f1c' : '#f4efe2'; c.font = '700 13px Barlow, Arial, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(String(d), 32, 33);
+      });
+      return [mat('#ffffff', .45, 0, { map: side }), mat('#ffffff', .4, 0, { map: top }), mat('#ffffff', .4, 0, { map: top })];
+    });
+    const chipG = new THREE.CylinderGeometry(CR2, CR2, CHH, 28);
+    const btnTop = canvasTex(64, 64, (c, w) => { c.fillStyle = '#f7f4ec'; c.fillRect(0, 0, w, w); c.fillStyle = '#15151b'; c.font = '800 34px Georgia, serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('D', 32, 35); });
+    const dealerBtn = new THREE.Group(), disc = cyl(.03, .03, .009, mat('#e9e4d8', .4), 36);
+    const face = new THREE.Mesh(new THREE.CircleGeometry(.027, 36), mat('#ffffff', .35, 0, { map: btnTop })); face.rotation.x = -Math.PI / 2; face.position.y = .0047;
+    dealerBtn.add(disc, face); sc.add(dealerBtn);
+    m = { cards: cardTable(sc), chips: piecePool(sc, key => { const me = new THREE.Mesh(chipG, chipMat[+key]); me.castShadow = true; me.receiveShadow = true; return me; }), dealerBtn, btnPos: null };
+  };
+  function chipStack(amount, cx, cz, s) {   // one column per denomination (tall ones split), laid out along x
+    let col = 0;
+    for (let di = 0; di < DEN.length; di++) {
+      let n = Math.floor(amount / DEN[di][0]); amount -= n * DEN[di][0];
+      while (n > 0) {
+        const h = Math.min(n, 12);
+        for (let i = 0; i < h; i++) { const c = m.chips.get(String(di)); c.position.set(cx + col * .05 * s + (hsh(di * 31 + i) % 5 - 2) * .0006, TY + CHH / 2 + i * CHH, cz + (hsh(i * 7 + di) % 5 - 2) * .0006); c.rotation.y = i * .7; }
+        n -= h; col++; if (col > 5) return;
+      }
+    }
+  }
+  g.render = (V, dt, o) => {
+    const me = o.local ? o.side : null, items = [], deck = { x: .4, y: TY + .03, z: -.06, rz: Math.PI, ry: .3 };
+    for (let i = 0; i < 6; i++) items.push({ key: 'd' + i, id: -1, x: .4, y: TY + .001 + i * .0011, z: -.06, rz: Math.PI, ry: .3 });
+    V.board.forEach((id, i) => items.push({ key: 'c' + id, id, x: (i - 2) * .098, y: TY + .001, z: -.02, from: deck }));
+    const reveal = V.ph === 'show' && V.res && V.res.how === 'show';
+    for (const k of [0, 1]) {
+      const folded = V.res && V.res.how === 'fold' && V.res.w !== k && V.ph === 'show';
+      const open = me === k, sp = handSpots(2, k, open, { sp: .095 });
+      V.hole[k].forEach((id, i) => {
+        const key = id >= 0 ? 'c' + id : 'h' + k + '_' + i;
+        let spot = sp[i];
+        if (reveal) spot = { x: (i - .5) * .095 * sgnS(k), y: TY + .002, z: sgnS(k) * .3, ry: k === 0 ? 0 : Math.PI };
+        else if (folded) spot = { x: deck.x - .02, y: TY + .012 + i * .001, z: deck.z + .02, rz: Math.PI, ry: .9 };
+        items.push(Object.assign({ key, id: reveal || open ? id : (id >= 0 ? id : -1), from: deck }, spot));
+      });
+    }
+    m.cards.frame(items, dt);
+    m.chips.begin();
+    for (const k of [0, 1]) {
+      const s = sgnS(k);
+      chipStack(V.stacks[k], .21 * s, .42 * s, s);
+      if (V.bet[k]) chipStack(V.bet[k], -.06 * s, .17 * s, s);
+    }
+    if (V.pot) chipStack(V.pot, -.42, .02, 1);
+    m.chips.end();
+    const dp = { x: -.26 * sgnS(V.dealer), z: .3 * sgnS(V.dealer) };
+    if (!m.btnPos) m.btnPos = dp;
+    const kk = lerpK(dt, 6); m.btnPos.x += (dp.x - m.btnPos.x) * kk; m.btnPos.z += (dp.z - m.btnPos.z) * kk;
+    m.dealerBtn.position.set(m.btnPos.x, TY + .0045, m.btnPos.z); m.dealerBtn.rotation.y = me === 1 ? Math.PI : 0;
+    return null;
+  };
+  g.hud = (V, vs) => {
+    const who = s => vs == null ? (s === 0 ? 'Azul' : 'Vermelho') : names(vs)[s];
+    const [sb, bb] = blinds(V), pot = V.pot + V.bet[0] + V.bet[1];
+    let line = '';
+    if (V.ph === 'show' && V.res) {
+      const R = V.res;
+      line = R.how === 'fold' ? who(R.w) + ' leva o pote · ' + who(1 - R.w) + ' desistiu'
+        : R.w === 2 ? 'Empate: os dois com ' + R.names[0] + ' · pote dividido' : who(R.w) + ' ganha com ' + R.names[R.w] + ' contra ' + R.names[1 - R.w];
+    } else if (V.win == null) {
+      line = STREETS[V.street] + ' · pote ' + pot + ' · blinds ' + sb + '/' + bb;
+      const L = V.last;
+      if (L && L[1] !== 'check') line = who(L[0]) + ({ call: ' pagou', raise: ' aumentou para ' + L[2], allin: ' foi all-in', fold: ' desistiu' }[L[1]] || '') + ' · ' + line;
+      else if (L) line = who(L[0]) + ' passou · ' + line;
+      if (V.ph === 'run') line += ' · mostrando as cartas';
+      else if (vs != null && V.turn === vs) { const tc = Math.max(0, V.bet[1 - vs] - V.bet[vs]); line += tc ? ' · pagar ' + tc : ' · sua vez'; }
+    }
+    return { sc: V.stacks.slice(), line };
+  };
+  g.winner = V => V.win;
+  g.overText = () => 'Ficou com todas as fichas.';
+  return g;
+})();
+
+const GAMES = { pong: Pong, toto: Toto, pool: Pool, botao: Botao, damas: Damas, xadrez: Xadrez, gamao: Gamao, oito: Oito, truco: Truco, poker: Poker };
 
 // ================= runtime =================
 let G = null, scene = null, S = null, V = null;
@@ -3135,7 +3395,7 @@ function onGuestPeers(ch) {
   else for (const e of evs) {
     if (!Array.isArray(e) || num(e[0], 0) <= lastEvId) continue;
     const type = String(e[1]);
-    if (['hit', 'kick', 'table', 'wall', 'ball', 'cushion', 'pocket', 'serve', 'cue', 'goal', 'place', 'capture', 'check', 'dice', 'card', 'truco'].includes(type))
+    if (['hit', 'kick', 'table', 'wall', 'ball', 'cushion', 'pocket', 'serve', 'cue', 'goal', 'place', 'capture', 'check', 'dice', 'card', 'truco', 'chip'].includes(type))
       playEv([num(e[0], 0), type, num(e[2], 0), num(e[3], 0), clamp(num(e[4], 1), 0, 1), e[5] === 0 || e[5] === 1 ? e[5] : -1]);
   }
   lastEvId = Math.max(lastEvId, maxId);
