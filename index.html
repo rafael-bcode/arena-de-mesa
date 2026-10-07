@@ -91,6 +91,9 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--gold);outline-o
 .seg button[aria-pressed="true"]{background:#232738;color:var(--ink)}
 #segN button{min-width:28px;text-align:center}
 .join{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.nick{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:center}
+.nick label{color:var(--dim);font-size:13px}
+#nickIn{font:600 15px var(--ui);padding:9px 10px;border-radius:6px;border:1px solid var(--line);background:#0e1018;color:var(--ink);min-width:0}
 .join label{color:var(--dim);font-size:13px}
 input.code{font:700 18px var(--ui);letter-spacing:.38em;text-transform:uppercase;text-align:center;width:8.5ch;padding:10px 6px;border-radius:6px;border:1px solid var(--line);background:#0e1018;color:var(--ink)}
 .err{color:var(--b);margin:0;font-size:13.5px;max-width:60ch}
@@ -172,6 +175,7 @@ input.code{font:700 18px var(--ui);letter-spacing:.38em;text-transform:uppercase
   .dock .actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.dock .seg{grid-column:1/-1}
   .dock .btn{padding:11px 8px;font-size:11.5px;letter-spacing:.1em}
   .dock .join{grid-template-columns:auto 1fr;padding-top:10px}.dock .join label{display:none}
+  .nick label{display:none}.nick{grid-template-columns:1fr}#nickIn{font-size:16px}
   input.code{font-size:16px;padding:9px 6px}
 }
 @media (prefers-reduced-motion:reduce){.pulse{animation:none}.card{transition:none}}
@@ -226,9 +230,9 @@ input.code{font:700 18px var(--ui);letter-spacing:.38em;text-transform:uppercase
     </div>
     <div class="tabs" id="tabs" role="group" aria-label="Categorias">
       <button data-cat="real" aria-pressed="false">Tempo real <i>3</i></button>
-      <button data-cat="turnos" aria-pressed="false">Por turnos <i>2</i></button>
+      <button data-cat="turnos" aria-pressed="false">Por turnos <i>4</i></button>
       <button data-cat="tabuleiro" aria-pressed="false">Tabuleiro <i>5</i></button>
-      <button data-cat="baralho" aria-pressed="false">Baralho <i>3</i></button>
+      <button data-cat="baralho" aria-pressed="false">Baralho <i>4</i></button>
       <button data-cat="cassino" aria-pressed="false">Cassino <i>3</i></button>
     </div>
     <div id="cards">
@@ -259,6 +263,14 @@ input.code{font:700 18px var(--ui);letter-spacing:.38em;text-transform:uppercase
       <button class="card" data-game="botao" style="--acc:#ff4f6d" aria-pressed="false">
         <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><ellipse cx="17" cy="30" rx="11" ry="5"/><path d="M6 30v-4c0-3 5-5 11-5s11 2 11 5v4"/><circle cx="37" cy="17" r="4"/><path d="M24 22 33 18" stroke-dasharray="2 3"/></svg>
         <b>Futebol de botão</b><small>Escolha o botão, mire e chute. Primeiro a 3 gols vence.</small>
+      </button>
+      <button class="card" data-game="naval" style="--acc:#38b6ff" aria-pressed="false">
+        <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 30h36l-5 7H11z"/><path d="M15 30v-6h14v6M21 24v-7h5v7"/><path d="M6 41c3 0 3-2 6-2s3 2 6 2 3-2 6-2 3 2 6 2 3-2 6-2"/></svg>
+        <b>Batalha naval</b><small>Esconda sua frota e afunde a do rival. Acertou, atira de novo.</small>
+      </button>
+      <button class="card" data-game="general" style="--acc:#ffc95c" aria-pressed="false">
+        <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"><rect x="5" y="18" width="16" height="16" rx="3"/><rect x="27" y="10" width="16" height="16" rx="3" transform="rotate(15 35 18)"/><circle cx="10" cy="23" r="1.3"/><circle cx="16" cy="29" r="1.3"/><circle cx="13" cy="26" r="1.3"/><circle cx="35" cy="18" r="1.3"/><path d="M14 40h20" stroke-linecap="round"/></svg>
+        <b>General</b><small>O Bozó dos 5 dados, de 1 a 6 jogadores. General de boca vence na hora.</small>
       </button>
       </div>
     </section>
@@ -293,6 +305,10 @@ input.code{font:700 18px var(--ui);letter-spacing:.38em;text-transform:uppercase
       <button class="card" data-game="truco" style="--acc:#ff4f6d" aria-pressed="false">
         <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"><rect x="8" y="9" width="19" height="27" rx="3" transform="rotate(-12 17 22)"/><rect x="21" y="11" width="19" height="27" rx="3" transform="rotate(10 30 24)"/><path d="M30 19l-3 6h6l-3 6" stroke-linecap="round"/></svg>
         <b>Truco</b><small>Paulista com manilha virada, 1x1 ou em duplas. Truco, seis, nove e doze.</small>
+      </button>
+      <button class="card" data-game="sueca" style="--acc:#c7b8ff" aria-pressed="false">
+        <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"><rect x="6" y="10" width="17" height="25" rx="3" transform="rotate(-14 14 22)"/><rect x="25" y="10" width="17" height="25" rx="3" transform="rotate(14 34 22)"/><path d="M24 30l-3 9h6z"/></svg>
+        <b>Sueca</b><small>Em duplas, com trunfo e 120 pontos em jogo. Faça 61 para ganhar.</small>
       </button>
       <button class="card" data-game="oito" style="--acc:#3fd39a" aria-pressed="false">
         <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"><rect x="12" y="8" width="24" height="33" rx="3"/><circle cx="24" cy="20" r="4"/><circle cx="24" cy="29" r="5"/></svg>
@@ -340,6 +356,10 @@ input.code{font:700 18px var(--ui);letter-spacing:.38em;text-transform:uppercase
           <button data-diff="2" aria-pressed="false">Difícil</button>
         </div>
       </div>
+      <div class="nick">
+        <label for="nickIn">Seu nome</label>
+        <input id="nickIn" maxlength="16" placeholder="Como te chamam?" autocomplete="nickname" spellcheck="false">
+      </div>
       <div class="join">
         <label for="codeIn">Tem um código de sala?</label>
         <input class="code" id="codeIn" maxlength="4" placeholder="CÓDIGO" autocomplete="off" spellcheck="false">
@@ -356,8 +376,11 @@ input.code{font:700 18px var(--ui);letter-spacing:.38em;text-transform:uppercase
   <div class="box">
     <p class="eyebrow" id="lobbyGame">PING-PONG</p>
     <div class="roomcode" id="lobbyCode">----</div>
-    <button class="btn ghost" id="btnCopy">Copiar código</button>
-    <p id="lobbyHint">Mande o código para o seu oponente.</p>
+    <div class="actions" style="justify-content:center">
+      <button class="btn" id="btnShare">Compartilhar link</button>
+      <button class="btn ghost" id="btnCopy">Copiar link</button>
+    </div>
+    <p id="lobbyHint">Mande o link para o seu oponente.</p>
     <div class="seg" id="lobbySeats" role="group" aria-label="Tamanho da mesa" hidden></div>
     <ul class="roster" id="lobbyRoster"></ul>
     <div class="actions" style="justify-content:center">
@@ -419,7 +442,7 @@ const A = (a, n, d = 0) => { const o = []; for (let i = 0; i < n; i++) o.push(nu
 const PHASE = v => ['count', 'play', 'over'].includes(v) ? v : 'count';
 const angDiff = d => Math.atan2(Math.sin(d), Math.cos(d));
 const COLS = ['#38b6ff', '#ff4f6d'];
-const GAME_NAMES = { pong: 'Ping-pong', toto: 'Totó', pool: 'Sinuca', botao: 'Futebol de botão', damas: 'Damas', xadrez: 'Xadrez', gamao: 'Gamão', oito: 'Oito Maluco', truco: 'Truco', poker: 'Poker', buraco: 'Buraco', vinte1: '21', airhockey: 'Air hockey', domino: 'Dominó', ludo: 'Ludo', roleta: 'Roleta' };
+const GAME_NAMES = { pong: 'Ping-pong', toto: 'Totó', pool: 'Sinuca', botao: 'Futebol de botão', damas: 'Damas', xadrez: 'Xadrez', gamao: 'Gamão', oito: 'Oito Maluco', truco: 'Truco', poker: 'Poker', buraco: 'Buraco', vinte1: '21', airhockey: 'Air hockey', domino: 'Dominó', ludo: 'Ludo', roleta: 'Roleta', general: 'General', sueca: 'Sueca', naval: 'Batalha naval' };
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 // CPU difficulty: 0 fácil, 1 normal, 2 difícil — each game's cpu() reads its knobs from here
 let diff = 1;
@@ -593,6 +616,8 @@ canvas.addEventListener('pointermove', updPtr);
 canvas.addEventListener('pointerdown', e => { initAudio(); updPtr(e); ptr.pressed = true; ptr.kbd = false; try { canvas.setPointerCapture(e.pointerId); } catch {} });
 canvas.addEventListener('pointerup', e => { updPtr(e); ptr.released = true; });
 canvas.addEventListener('pointercancel', () => { ptr.released = true; });
+const digitPressed = {};
+addEventListener('keydown', e => { if (/^Digit[1-9]$/.test(e.code) && !(e.target && e.target.tagName === 'INPUT')) digitPressed[+e.code.slice(5)] = true; });
 const KEYS = { ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right', ArrowUp: 'up', KeyW: 'up', ArrowDown: 'down', KeyS: 'down', ShiftLeft: 'fine', ShiftRight: 'fine' };
 addEventListener('keydown', e => {
   if (e.target && e.target.tagName === 'INPUT') return;
@@ -4611,7 +4636,479 @@ const Roleta = (() => {
   return g;
 })();
 
-const GAMES = { pong: Pong, toto: Toto, pool: Pool, botao: Botao, damas: Damas, xadrez: Xadrez, gamao: Gamao, oito: Oito, truco: Truco, poker: Poker, buraco: Buraco, vinte1: Vinte1, airhockey: AirHockey, domino: Domino, ludo: Ludo, roleta: Roleta };
+// ======================================================================
+// GAME 17: GENERAL (Bozó · 5 dados · 1 a 6 jogadores)
+// ======================================================================
+const General = (() => {
+  const CATS = ['Um', 'Dois', 'Três', 'Quatro', 'Cinco', 'Seis', 'Seguida', 'Full', 'Quadra', 'General'];
+  const ROLL_T = .9, DS = .048;
+  const g = { id: 'general', multi: true, fixedCam: true, seats: [1, 2, 3, 4, 5, 6], realtime: false, planeY: TY, fxY: TY, halfW: .6, cam: { h: 1.15, d: .8, lz: .1 },
+    help: 'Role até 3 vezes: toque nos dados para segurar · marque uma casa por vez · seguida 20, full 30, quadra 40, general 50 (+5 de primeira) · general de boca vence na hora.' };
+  let m = {};
+  // points of dice d in category c; boca = made on the first roll of the turn
+  function points(d, c, boca) {
+    const cnt = [0, 0, 0, 0, 0, 0, 0]; d.forEach(v => cnt[v]++);
+    if (c < 6) return cnt[c + 1] * (c + 1);
+    const sorted = d.slice().sort((a, b) => a - b).join(''), counts = cnt.filter(x => x).sort((a, b) => b - a);
+    const bonus = boca ? 5 : 0;
+    if (c === 6) return sorted === '12345' || sorted === '23456' || sorted === '13456' ? 20 + bonus : 0;   // 3-4-5-6-1 also counts in the Brazilian rule
+    if (c === 7) return counts[0] === 3 && counts[1] === 2 ? 30 + bonus : 0;
+    if (c === 8) return counts[0] >= 4 ? 40 + bonus : 0;
+    return counts[0] === 5 ? 50 + bonus : 0;
+  }
+  const totalOf = sheet => sheet.reduce((a, v) => a + (v || 0), 0);
+  function startTurn(S) { S.dice = [0, 0, 0, 0, 0]; S.held = [false, false, false, false, false]; S.rolls = 0; S.tm = 0; S.tn++; }
+  g.init = (n = 1) => { const S = { n, sheet: range(n).map(() => Array(10).fill(null)), turn: 0, drid: [0, 0, 0, 0, 0], last: null, tn: 0, mid: rid(), win: null, boca: false }; startTurn(S); return S; };
+  g.step = (S, dt, ins) => {
+    if (S.win != null) return;
+    S.tm += dt;
+    const k = S.turn, inp = ins[k], ok = a => Array.isArray(a) && a[0] === S.mid && a[1] === S.tn;
+    if (!inp) return;
+    if (ok(inp.roll) && S.rolls < 3 && S.tm > (S.rolls ? ROLL_T : .2)) {
+      const held = Array.isArray(inp.roll[2]) && S.rolls > 0 ? inp.roll[2].slice(0, 5).map(Boolean) : [false, false, false, false, false];
+      if (held.every(Boolean)) return;
+      S.held = held;
+      for (let i = 0; i < 5; i++) if (!held[i]) { S.dice[i] = 1 + Math.floor(Math.random() * 6); S.drid[i]++; }
+      S.rolls++; S.boca = S.rolls === 1; S.tm = 0; S.tn++;
+      ev(S, 'dice', 0, 0, 1, k);
+      if (S.boca && points(S.dice, 9, true)) { S.sheet[k][9] = 55; S.last = [k, 9, 55, 1]; S.win = k; ev(S, 'goal', 0, 0, 1, k); }   // general de boca
+      return;
+    }
+    if (ok(inp.score) && S.rolls > 0 && S.tm > ROLL_T * .8) {
+      const c = num(inp.score[2], -1) | 0; if (c < 0 || c > 9 || S.sheet[k][c] != null) return;
+      const v = points(S.dice, c, S.boca); S.sheet[k][c] = v; S.last = [k, c, v, S.boca ? 1 : 0];
+      ev(S, v >= 20 ? 'capture' : 'place', 0, 0, 1, k);
+      if (S.sheet.every(sh => sh.every(x => x != null))) { const t = S.sheet.map(totalOf); S.win = t.indexOf(Math.max(...t)); return; }
+      S.turn = nextSeat(S, k); startTurn(S);
+    }
+  };
+  // ---- CPU: keep the most promising dice, then take the best open box ----
+  g.cpu = (S, side, dt, mem) => {
+    if (S.win != null || S.turn !== side) return {};
+    if (mem.tn !== S.tn || mem.mid !== S.mid) { mem.tn = S.tn; mem.mid = S.mid; mem.t = 0; }
+    mem.t += dt; if (mem.t < .8 || (S.rolls && S.tm < ROLL_T)) return {};
+    const open = range(10).filter(c => S.sheet[side][c] == null);
+    if (!S.rolls) return { roll: [S.mid, S.tn, null] };
+    const best = open.map(c => ({ c, v: points(S.dice, c, S.boca), w: c < 6 ? points(S.dice, c, S.boca) / (c + 1) >= 3 ? 8 : 0 : 12 })).sort((a, b) => (b.v + b.w) - (a.v + a.w))[0];
+    const reroll = held => held.every(Boolean) ? null : { roll: [S.mid, S.tn, held] };   // holding all five means: just score
+    if (S.rolls < 3 && !(best.c >= 6 && best.v > 0) && diff > 0) {
+      const cnt = [0, 0, 0, 0, 0, 0, 0]; S.dice.forEach(v => cnt[v]++);
+      let keepV = 6; for (let v = 6; v >= 1; v--) if (cnt[v] > cnt[keepV] && (open.includes(v - 1) || open.some(c => c >= 7))) keepV = v;
+      const uniq = new Set(S.dice).size;
+      const seen = new Set(), r = open.includes(6) && uniq >= 4 && cnt[keepV] < 2
+        ? reroll(S.dice.map(v => { if (seen.has(v)) return false; seen.add(v); return true; }))   // going for the straight: one of each
+        : reroll(S.dice.map(v => v === keepV));
+      if (r) return r;
+    }
+    if (S.rolls < 3 && diff === 0 && Math.random() < .5) { const r = reroll(S.dice.map(() => Math.random() < .4)); if (r) return r; }
+    let pick = best;
+    if (best.v === 0) pick = { c: open.includes(0) ? 0 : open.slice().sort((a, b) => points(S.dice, b, S.boca) - points(S.dice, a, S.boca))[0] };   // scratch the cheapest box
+    return { score: [S.mid, S.tn, pick.c] };
+  };
+  g.local = (V, side) => {
+    if (ctl.tn !== V.tn || ctl.mid !== V.mid) { ctl.tn = V.tn; ctl.mid = V.mid; ctl.out = {}; ctl.held = V.held.slice(); }
+    const act = ctl.act; ctl.act = null;
+    if (V.win != null || V.turn !== side) return ctl.out;
+    if (act === 'roll') ctl.out = { roll: [V.mid, V.tn, ctl.held] };
+    else if (act && act[0] === 'c') ctl.out = { score: [V.mid, V.tn, +act.slice(1)] };
+    else if (ptr.pressed && !ptr.kbd && V.rolls > 0 && V.rolls < 3) {
+      const hit = ray.intersectObjects(m.dice.map(d => d.me), false)[0];
+      if (hit) { const i = m.dice.findIndex(d => d.me === hit.object); ctl.held[i] = !ctl.held[i]; tone(ctl.held[i] ? 990 : 660, .04, { vol: .06 }); }
+    }
+    // keys 1–5 hold or release a die (dice are ordered left to right)
+    if (V.rolls > 0 && V.rolls < 3) for (let i = 0; i < 5; i++) if (digitPressed[i + 1]) { ctl.held[i] = !ctl.held[i]; tone(ctl.held[i] ? 990 : 660, .04, { vol: .06 }); }
+    return ctl.out;
+  };
+  g.actions = (V, vs) => {
+    if (vs == null || V.win != null || V.turn !== vs) return [];
+    const r = [];
+    if (V.rolls < 3) r.push({ id: 'roll', label: V.rolls ? 'Rolar de novo (' + (3 - V.rolls) + ')' : 'Rolar os dados' });
+    if (V.rolls > 0 && V.tm > ROLL_T * .8) range(10).forEach(c => { if (V.sheet[vs][c] == null) { const v = points(V.dice, c, V.boca); r.push({ id: 'c' + c, label: CATS[c] + ' · ' + v, ghost: !v, pink: v >= 20 }); } });
+    return r;
+  };
+  g.pack = S => ({ n: S.n, sheet: S.sheet, turn: S.turn, dice: S.dice, held: S.held, rolls: S.rolls, boca: S.boca, drid: S.drid, tm: r3(S.tm), last: S.last, tn: S.tn, mid: S.mid, win: S.win });
+  g.unpack = d => {
+    const n = clamp(Math.round(num(d.n, 1)), 1, 6);
+    return { n, sheet: range(n).map(s => range(10).map(c => { const v = d.sheet && d.sheet[s] && d.sheet[s][c]; return Number.isFinite(v) ? clamp(Math.round(v), 0, 60) : null; })),
+      turn: sanInt(d.turn, 0, n - 1, 0), dice: A(d.dice, 5).map(v => sanInt(v, 0, 6, 0)), held: range(5).map(i => !!(d.held && d.held[i])), rolls: sanInt(d.rolls, 0, 3, 0), boca: !!d.boca,
+      drid: A(d.drid, 5).map(v => Math.round(v)), tm: num(d.tm, 0), last: Array.isArray(d.last) ? [sanInt(d.last[0], 0, n - 1, 0), sanInt(d.last[1], 0, 9, 0), num(d.last[2], 0), d.last[3] ? 1 : 0] : null,
+      tn: num(d.tn, 0), mid: d.mid, win: Number.isInteger(d.win) && d.win >= 0 && d.win < n ? d.win : null };
+  };
+  g.build = sc => {
+    buildCardTable(sc, { title: 'GENERAL', sub: 'SEGUIDA 20 · FULL 30 · QUADRA 40 · GENERAL 50' });
+    // leather dice tray
+    const tray = new THREE.Group(), wood = lacquer('#4a2412', .35), felt = mat('#5b1520', .95);
+    const base = new THREE.Mesh(new THREE.CylinderGeometry(.25, .25, .006, 64), felt); base.position.y = TY + .003; base.receiveShadow = true; tray.add(base);
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(.25, .016, 12, 80), wood); ring.rotation.x = Math.PI / 2; ring.position.y = TY + .012; ring.castShadow = true; tray.add(ring);
+    tray.position.z = .0; sc.add(tray);
+    m = { dice: range(5).map(() => makeDie(sc, DS)), st: range(5).map(() => ({ rid: -1, dt0: 0 })), heldMarks: [] };
+    for (let i = 0; i < 5; i++) { const mk = new THREE.Mesh(new THREE.RingGeometry(.032, .038, 32), new THREE.MeshBasicMaterial({ color: '#ffc95c', transparent: true, opacity: 0, depthWrite: false })); mk.rotation.x = -Math.PI / 2; sc.add(mk); m.heldMarks.push(mk); }
+  };
+  g.render = (V, dt, o) => {
+    const me = o.local ? o.side : null, mine = me != null && V.turn === me, held = mine && ctl.tn === V.tn ? ctl.held : V.held;
+    for (let i = 0; i < 5; i++) {
+      const h = hsh(V.drid[i] * 7 + i), rest = held[i] && V.rolls > 0
+        ? { x: (i - 2) * .075, z: .33 }                                              // held dice wait in a row in front of the tray
+        : { x: (i - 2) * .075 + (h % 9 - 4) * .005, z: -.02 + (h % 7 - 3) * .016 };
+      // slide toward the resting spot (tray or the held row); a fresh roll still tumbles in from the cup corner
+      const st = m.st[i]; if (!st.pos) st.pos = { x: rest.x, z: rest.z };
+      st.pos.x += (rest.x - st.pos.x) * lerpK(dt, 10); st.pos.z += (rest.z - st.pos.z) * lerpK(dt, 10);
+      renderDie(m.dice[i], st, V.drid[i], V.dice[i], dt, ROLL_T, { x: .38, z: .3 }, st.pos, TY + .006, V.dice[i] > 0);
+      const mk = m.heldMarks[i]; mk.position.set(st.pos.x, TY + .007, st.pos.z);
+      mk.material.opacity += ((held[i] && V.rolls > 0 ? .95 : 0) - mk.material.opacity) * lerpK(dt, 10);
+    }
+    return null;
+  };
+  g.hud = (V, vs) => {
+    const nm = names(vs), left = V.sheet[V.turn].filter(x => x == null).length;
+    let line = '';
+    if (V.win == null) {
+      const L = V.last, prev = L && V.rolls === 0 ? nm[L[0]] + ' marcou ' + CATS[L[1]] + ' · ' + L[2] + (L[3] && L[1] >= 6 && L[2] ? ' (de boca!)' : '') + ' — ' : '';
+      const nh = (ctl.tn === V.tn && ctl.held ? ctl.held : V.held).filter(Boolean).length;
+      if (vs != null && V.turn === vs) line = prev + (V.rolls === 0 ? 'Sua vez: role os dados' : V.rolls < 3 ? (nh ? 'Segurando ' + nh + (nh > 1 ? ' dados' : ' dado') + ' · role de novo ou marque uma casa' : 'Toque nos dados (ou teclas 1–5) para segurar, role de novo ou marque uma casa') : 'Marque uma casa') + ' · faltam ' + left + ' casas';
+      else line = prev + 'Vez de ' + nm[V.turn] + (V.rolls ? ' · jogada ' + V.rolls + ' de 3' : '');
+    }
+    return { board: range(V.n).map(s => ({ n: nm[s], v: totalOf(V.sheet[s]), c: SEAT_COLS[s], on: V.turn === s && V.win == null })), line,
+      big: V.win != null && V.sheet[V.win][9] === 55 ? 'GENERAL!' : '' };
+  };
+  g.winner = V => V.win;
+  g.result = (V, vs) => {
+    const r = winTitle(V, vs, V.win, false);
+    if (V.n === 1) { r.title = V.sheet[0][9] === 55 ? 'General de boca!' : 'Você fez ' + totalOf(V.sheet[0]) + ' pontos'; r.won = true; }
+    return r;
+  };
+  g.overText = V => V.sheet[V.win][9] === 55 ? 'General de boca: cinco dados iguais na primeira jogada.' : 'Placar: ' + range(V.n).map(s => names(mySideView())[s] + ' ' + totalOf(V.sheet[s])).join(' · ') + '.';
+  return g;
+})();
+
+// ======================================================================
+// GAME 18: SUECA (4 jogadores em duplas)
+// ======================================================================
+const Sueca = (() => {
+  const STR = [1, 2, 3, 4, 5, 11, 10, 12, 6, 0];              // 2 3 4 5 6 Q J K 7 A (weakest → strongest)
+  const PTS = { 0: 11, 6: 10, 12: 4, 10: 3, 11: 2 };          // A, 7, K, J, Q
+  const DECK40 = [...Array(52).keys()].filter(id => STR.includes(cRank(id))), GOAL = 4;
+  const g = { id: 'sueca', multi: true, seats: [4], realtime: false, planeY: TY, fxY: TY, halfW: .6, cam: { h: 1.05, d: .92, lz: .04 },
+    help: 'Duplas: o parceiro senta à sua frente · siga o naipe puxado · o trunfo vence os outros naipes · faça 61 dos 120 pontos para ganhar o jogo · 4 jogos vencem a partida.' };
+  let m = {};
+  const team = s => s % 2, cpts = id => PTS[cRank(id)] || 0, str = id => STR.indexOf(cRank(id));
+  const legal = (S, k) => { const h = S.hands[k]; if (S.lead == null) return h.slice(); const f = h.filter(id => cSuit(id) === S.lead); return f.length ? f : h.slice(); };
+  function winnerOf(S) {   // seat that takes the trick on the table
+    let best = -1, bs = -1;
+    for (let i = 0; i < S.n; i++) {
+      const s = (S.leader + i) % S.n, c = S.table[s]; if (c < 0) continue;
+      const score = (cSuit(c) === S.trump ? 100 : cSuit(c) === S.lead ? 50 : 0) + str(c);
+      if (score > best) { best = score; bs = s; }
+    }
+    return bs;
+  }
+  function startHand(S) {
+    const deck = shuffle(DECK40.slice());
+    S.hands = range(S.n).map(() => []);
+    for (let i = 0; i < 40; i++) S.hands[(S.dealer + 1 + i) % S.n].push(deck[i]);   // the dealer gets the last card…
+    S.trumpCard = deck[39]; S.trump = cSuit(deck[39]);                             // …and it sets the trump suit
+    S.table = Array(S.n).fill(-1); S.lead = null; S.leader = S.turn = nextSeat(S, S.dealer); S.played = 0;
+    S.won = [[], []]; S.tricks = 0; S.ph = 'play'; S.tm = 0; S.res = null; S.hn++; S.tn++;
+  }
+  g.init = (n = 4) => { const S = { n: 4, games: [0, 0], dealer: Math.floor(Math.random() * 4), hn: 0, tn: 0, mid: rid(), win: null }; startHand(S); return S; };
+  function endHand(S) {
+    const p = S.won.map(cs => cs.reduce((a, id) => a + cpts(id), 0)), w = p[0] > 60 ? 0 : p[1] > 60 ? 1 : -1;
+    const gain = w < 0 ? 0 : p[w] === 120 ? 4 : p[w] > 90 ? 2 : 1;
+    if (w >= 0) S.games[w] += gain;
+    S.res = { p, w, gain }; S.ph = 'end'; S.tm = 0; S.tn++;
+    ev(S, w >= 0 ? 'goal' : 'place', 0, 0, 1, w);
+  }
+  g.step = (S, dt, ins) => {
+    if (S.win != null) return;
+    S.tm += dt;
+    if (S.ph === 'reveal') {
+      if (S.tm < 1.3) return;
+      const w = winnerOf(S); S.won[team(w)].push(...S.table); S.lastTrick = { cards: S.table.slice(), w };
+      S.table = Array(S.n).fill(-1); S.lead = null; S.leader = S.turn = w; S.played = 0; S.tricks++; S.ph = 'play'; S.tm = 0; S.tn++;
+      ev(S, 'capture', 0, 0, .6, w);
+      if (S.tricks === 10) endHand(S);
+      return;
+    }
+    if (S.ph === 'end') {
+      if (S.tm < 3.5) return;
+      if (Math.max(...S.games) >= GOAL) S.win = S.games[0] >= GOAL ? 0 : 1;
+      else { S.dealer = nextSeat(S, S.dealer); startHand(S); }
+      return;
+    }
+    const k = S.turn, inp = ins[k], a = inp && inp.play;
+    if (!Array.isArray(a) || a[0] !== S.mid || a[1] !== S.tn) return;
+    const id = num(a[2], -1) | 0; if (!legal(S, k).includes(id)) return;
+    S.hands[k].splice(S.hands[k].indexOf(id), 1); S.table[k] = id; if (S.lead == null) S.lead = cSuit(id);
+    S.played++; S.tn++; ev(S, 'card', 0, 0, 1, k);
+    if (S.played === S.n) { S.ph = 'reveal'; S.tm = 0; } else S.turn = nextSeat(S, k);
+  };
+  g.cpu = (S, side, dt, mem) => {
+    if (S.win != null || S.ph !== 'play' || S.turn !== side) return {};
+    if (mem.tn !== S.tn || mem.mid !== S.mid) { mem.tn = S.tn; mem.mid = S.mid; mem.t = 0; }
+    mem.t += dt; if (mem.t < .9) return {};
+    const opts = legal(S, side), byStr = a => a.slice().sort((x, y) => (cSuit(x) === S.trump) - (cSuit(y) === S.trump) || str(x) - str(y));
+    let id;
+    if (diff === 0) id = opts[Math.floor(Math.random() * opts.length)];
+    else if (S.lead == null) {
+      // lead an ace if we have one outside trumps, otherwise our cheapest card
+      const ace = opts.find(c => cRank(c) === 0 && cSuit(c) !== S.trump);
+      id = ace != null ? ace : byStr(opts.filter(c => !cpts(c)).length ? opts.filter(c => !cpts(c)) : opts)[0];
+    } else {
+      const w = winnerOf(S), partner = team(w) === team(side), onTable = S.table.reduce((a, c) => a + (c >= 0 ? cpts(c) : 0), 0);
+      const tryMe = c => { const save = S.table[side]; S.table[side] = c; const r = winnerOf(S) === side; S.table[side] = save; return r; };
+      const last = S.played === S.n - 1;
+      if (partner && (last || cSuit(S.table[w]) === S.trump || cRank(S.table[w]) === 0)) id = opts.slice().sort((x, y) => cpts(y) - cpts(x) || str(x) - str(y))[0];   // load points on the partner
+      else {
+        const beats = byStr(opts.filter(tryMe));
+        id = beats.length && (onTable >= 10 || last || diff === 2) ? beats[0] : byStr(opts.filter(c => !cpts(c)).length ? opts.filter(c => !cpts(c)) : opts)[0];
+      }
+    }
+    return { play: [S.mid, S.tn, id] };
+  };
+  g.local = (V, side) => {
+    if (ctl.tn !== V.tn || ctl.mid !== V.mid) { ctl.tn = V.tn; ctl.mid = V.mid; ctl.out = {}; }
+    if (V.win != null || V.ph !== 'play' || V.turn !== side) return ctl.out;
+    if (ptr.pressed && !ptr.kbd) {
+      const key = m.cards.pick(V.hands[side].map(id => 'c' + id));
+      if (key) {
+        const id = +key.slice(1);
+        if (legal(V, side).includes(id)) ctl.out = { play: [V.mid, V.tn, id] };
+        else { toast('Siga o naipe puxado: ' + SUIT_NAME[V.lead].toLowerCase() + '.'); tone(220, .12, { type: 'triangle', vol: .07 }); }
+      }
+    }
+    return ctl.out;
+  };
+  g.pack = (S, seat) => ({ n: 4, games: S.games, dealer: S.dealer, hn: S.hn, hands: S.hands.map((h, k) => k === seat || S.ph === 'end' ? h.slice() : h.map(c => c === S.trumpCard ? c : -1)),
+    trumpCard: S.trumpCard, trump: S.trump, table: S.table, lead: S.lead, leader: S.leader, turn: S.turn, played: S.played, won: S.won.map(w => w.length), tricks: S.tricks,
+    lastTrick: S.lastTrick, ph: S.ph, tm: r3(S.tm), res: S.res, tn: S.tn, mid: S.mid, win: S.win });
+  g.unpack = d => {
+    const seat = v => sanInt(v, 0, 3, 0), R = d.res && typeof d.res === 'object' ? d.res : null, LT = d.lastTrick && typeof d.lastTrick === 'object' ? d.lastTrick : null;
+    return {
+      n: 4, games: A(d.games, 2).map(v => clamp(Math.round(v), 0, 8)), dealer: seat(d.dealer), hn: num(d.hn, 1), hands: range(4).map(k => unpackIds(d.hands && d.hands[k], 52).slice(0, 10)),
+      trumpCard: sanInt(d.trumpCard, 0, 51, 0), trump: sanInt(d.trump, 0, 3, 0), table: A(d.table, 4, -1).map(v => sanInt(v, -1, 51, -1)), lead: d.lead == null ? null : sanInt(d.lead, 0, 3, 0),
+      leader: seat(d.leader), turn: seat(d.turn), played: sanInt(d.played, 0, 4, 0), won: A(d.won, 2).map(v => sanInt(v, 0, 40, 0)), tricks: sanInt(d.tricks, 0, 10, 0),
+      lastTrick: LT ? { cards: A(LT.cards, 4, -1).map(v => sanInt(v, -1, 51, -1)), w: seat(LT.w) } : null, ph: ['play', 'reveal', 'end'].includes(d.ph) ? d.ph : 'play', tm: num(d.tm, 0),
+      res: R ? { p: A(R.p, 2), w: sanInt(R.w, -1, 1, -1), gain: num(R.gain, 0) } : null, tn: num(d.tn, 0), mid: d.mid, win: d.win === 0 || d.win === 1 ? d.win : null
+    };
+  };
+  g.build = sc => { buildCardTable(sc, { title: 'SUECA' }); m = { cards: cardTable(sc) }; };
+  g.render = (V, dt, o) => {
+    const n = 4, me = o.local ? o.side : null, items = [], myTurn = me != null && V.turn === me && V.ph === 'play' && V.win == null, can = myTurn ? legal(V, me) : [];
+    for (let k = 0; k < n; k++) if (V.table[k] >= 0) items.push(Object.assign({ key: 'c' + V.table[k], id: V.table[k], from: seatFrom(k, n) }, atSeat(k, n, (hsh(V.table[k]) % 5 - 2) * .006, TY + .002 + k * .001, .13)));
+    // tricks already taken: a face-down pile beside one player of each team
+    const piles = Array.isArray(V.won[0]) ? V.won.map(w => w.length) : V.won;
+    piles.forEach((cnt, t) => { for (let i = 0; i < Math.min(cnt, 40); i += 4) items.push(Object.assign({ key: 'pile' + t + '_' + i, id: -1 }, atSeat(t, n, .32, TY + .002 + i * .0003, .3, { rz: Math.PI, ry: seatAng(t, n) + .3 }))); });
+    for (let k = 0; k < n; k++) {
+      const ids = V.hands[k], open = me === k || V.ph === 'end', sp = seatHand(ids.length, k, n, open, { w: .85, sp: .072, r: .62 });
+      ids.forEach((id, i) => {
+        const shown = id >= 0 && (open || id === V.trumpCard), spot = Object.assign({}, sp[i]);
+        if (!open && id === V.trumpCard) Object.assign(spot, atSeat(k, n, -.3, TY + .002, .5));   // the dealer's trump card lies face up
+        if (myTurn && k === me && can.includes(id)) spot.y += .012;
+        items.push(Object.assign({ key: shown ? 'c' + id : 'h' + k + '_' + i, id: shown ? id : -1, glow: myTurn && k === me && can.includes(id), from: seatFrom(V.dealer, n) }, spot));
+      });
+    }
+    m.cards.frame(items, dt);
+    return null;
+  };
+  const teamName = (vs, t) => vs == null ? (t === 0 ? 'Dupla azul' : 'Dupla vermelha') : team(vs) === t ? 'Nós' : 'Eles';
+  g.hud = (V, vs) => {
+    const nm = names(vs), tr = SUIT_CH[V.trump] + ' ' + SUIT_NAME[V.trump];
+    let line = 'Trunfo ' + tr + ' · vaza ' + Math.min(10, V.tricks + 1) + ' de 10';
+    if (V.ph === 'end' && V.res) line = 'Pontos: ' + teamName(vs, 0) + ' ' + V.res.p[0] + ' × ' + V.res.p[1] + ' ' + teamName(vs, 1) + ' · ' + (V.res.w < 0 ? 'empate (60 a 60)' : teamName(vs, V.res.w) + ' +' + V.res.gain + (V.res.gain > 1 ? ' jogos' : ' jogo'));
+    else if (V.ph === 'reveal') line += ' · ' + nm[winnerOf(V)] + ' leva a vaza';
+    else if (V.win == null) line += vs != null && V.turn === vs ? (V.lead == null ? ' · sua vez de puxar' : ' · sua vez · siga ' + SUIT_CH[V.lead]) : ' · vez de ' + nm[V.turn];
+    return { board: [0, 1].map(t => ({ n: teamName(vs, t), v: V.games[t] + (V.games[t] === 1 ? ' jogo' : ' jogos'), c: SEAT_COLS[t], on: V.ph === 'play' && team(V.turn) === t })), line };
+  };
+  g.winner = V => V.win;
+  g.result = (V, vs) => Object.assign(winTitle(V, vs, V.win, true), { score: V.games[0] + ' : ' + V.games[1] });
+  g.overText = () => 'Chegou a ' + GOAL + ' jogos primeiro.';
+  return g;
+})();
+
+// ======================================================================
+// GAME 19: BATALHA NAVAL (1x1)
+// ======================================================================
+const Naval = (() => {
+  const N = 10, C = .05, FLEET = [5, 4, 3, 3, 2], SHIP_NAME = { 5: 'porta-aviões', 4: 'encouraçado', 3: 'cruzador', 2: 'destróier' }, BZ = .29;
+  const g = { id: 'naval', multi: true, seats: [2], realtime: false, planeY: TY, fxY: TY, halfW: .6, cam: { h: 1.42, d: 1.02, lz: .04 },
+    help: 'Embaralhe sua frota e aperte Pronto · depois toque no mar do adversário para atirar · acertou, atira de novo · afunde os 5 navios primeiro.' };
+  let m = {};
+  const cellsOf = sh => range(sh.len).map(i => sh.dir ? [sh.x, sh.y + i] : [sh.x + i, sh.y]);
+  function randomFleet() {   // ships never touch, not even at the corners
+    for (;;) {
+      const taken = new Set(), fleet = [];
+      let ok = true;
+      for (const len of FLEET) {
+        let placed = false;
+        for (let t = 0; t < 200 && !placed; t++) {
+          const dir = Math.random() < .5 ? 0 : 1, x = Math.floor(Math.random() * (dir ? N : N - len + 1)), y = Math.floor(Math.random() * (dir ? N - len + 1 : N));
+          const sh = { x, y, len, dir }, cs = cellsOf(sh);
+          if (cs.some(([cx, cy]) => { for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) if (taken.has((cx + dx) + ',' + (cy + dy))) return true; return false; })) continue;
+          cs.forEach(([cx, cy]) => taken.add(cx + ',' + cy)); fleet.push(sh); placed = true;
+        }
+        if (!placed) { ok = false; break; }
+      }
+      if (ok) return fleet;
+    }
+  }
+  const shipAt = (fleet, x, y) => fleet.findIndex(sh => cellsOf(sh).some(([cx, cy]) => cx === x && cy === y));
+  const sunk = (S, k, i) => cellsOf(S.fleet[k][i]).every(([x, y]) => S.shots[k][y * N + x] === 2);
+  const afloat = (S, k) => S.fleet[k].filter((_, i) => !sunk(S, k, i)).length;
+  g.init = () => ({ n: 2, fleet: [randomFleet(), randomFleet()], shots: [Array(N * N).fill(0), Array(N * N).fill(0)], ready: [false, false], shuf: [0, 0], ph: 'place',
+    turn: Math.random() < .5 ? 0 : 1, last: null, tm: 0, tn: 0, mid: rid(), win: null });
+  g.step = (S, dt, ins) => {
+    if (S.win != null) return;
+    S.tm += dt;
+    if (S.ph === 'place') {
+      for (const k of [0, 1]) {
+        const i = ins[k]; if (!i || S.ready[k]) continue;
+        if (Array.isArray(i.shuffle) && i.shuffle[0] === S.mid && i.shuffle[1] > S.shuf[k]) { S.shuf[k] = i.shuffle[1]; S.fleet[k] = randomFleet(); S.tn++; }
+        if (Array.isArray(i.ready) && i.ready[0] === S.mid) { S.ready[k] = true; S.tn++; }
+      }
+      if (S.ready[0] && S.ready[1]) { S.ph = 'fire'; S.tm = 0; S.tn++; }
+      return;
+    }
+    const k = S.turn, o = 1 - k, a = ins[k] && ins[k].shot;
+    if (!Array.isArray(a) || a[0] !== S.mid || a[1] !== S.tn || S.tm < .5) return;
+    const x = num(a[2], -1) | 0, y = num(a[3], -1) | 0;
+    if (x < 0 || x >= N || y < 0 || y >= N || S.shots[o][y * N + x]) return;
+    const si = shipAt(S.fleet[o], x, y);
+    S.shots[o][y * N + x] = si >= 0 ? 2 : 1; S.tm = 0; S.tn++;
+    const sk = si >= 0 && sunk(S, o, si);
+    S.last = { k, x, y, res: si < 0 ? 'miss' : sk ? 'sunk' : 'hit', len: si >= 0 ? S.fleet[o][si].len : 0 };
+    const w = cellPos(o, x, y);
+    ev(S, si < 0 ? 'place' : sk ? 'goal' : 'capture', w.x, w.z, 1, k);
+    if (!afloat(S, o)) { S.win = k; return; }
+    if (si < 0) S.turn = o;   // a hit earns another shot
+  };
+  // ---- CPU: hunt on a checkerboard, then finish what it hit ----
+  function cpuShot(S, side) {
+    const o = 1 - side, sh = S.shots[o], free = (x, y) => x >= 0 && x < N && y >= 0 && y < N && !sh[y * N + x];
+    const sunkCells = new Set(); S.fleet[o].forEach((s, i) => { if (sunk(S, o, i)) cellsOf(s).forEach(([x, y]) => sunkCells.add(x + ',' + y)); });
+    const open = []; for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) if (sh[y * N + x] === 2 && !sunkCells.has(x + ',' + y)) open.push([x, y]);
+    if (open.length && diff > 0) {
+      if (open.length > 1) {   // two or more hits in a line: keep going along it
+        const horiz = open.every(([, y]) => y === open[0][1]), xs = open.map(p => p[0]), ys = open.map(p => p[1]);
+        const cands = horiz ? [[Math.min(...xs) - 1, open[0][1]], [Math.max(...xs) + 1, open[0][1]]] : [[open[0][0], Math.min(...ys) - 1], [open[0][0], Math.max(...ys) + 1]];
+        const c = cands.filter(([x, y]) => free(x, y)); if (c.length) return c[Math.floor(Math.random() * c.length)];
+      }
+      for (const [x, y] of open) { const nb = [[x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]].filter(([a, b]) => free(a, b)); if (nb.length) return nb[Math.floor(Math.random() * nb.length)]; }
+    }
+    let cands = []; for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) if (free(x, y) && (diff < 2 || (x + y) % 2 === 0)) cands.push([x, y]);
+    // ships never touch: skip water right next to a sunk ship
+    const nearSunk = ([x, y]) => [-1, 0, 1].some(dx => [-1, 0, 1].some(dy => sunkCells.has((x + dx) + ',' + (y + dy))));
+    if (diff > 0) { const f = cands.filter(c => !nearSunk(c)); if (f.length) cands = f; }
+    if (!cands.length) for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) if (free(x, y)) cands.push([x, y]);
+    return cands[Math.floor(Math.random() * cands.length)];
+  }
+  g.cpu = (S, side, dt, mem) => {
+    if (S.win != null) return {};
+    if (S.ph === 'place') return S.ready[side] ? {} : { ready: [S.mid] };
+    if (S.turn !== side) return {};
+    if (mem.tn !== S.tn || mem.mid !== S.mid) { mem.tn = S.tn; mem.mid = S.mid; mem.t = 0; mem.shot = null; }
+    mem.t += dt; if (mem.t < .9) return {};
+    if (!mem.shot) mem.shot = cpuShot(S, side);
+    return { shot: [S.mid, S.tn, mem.shot[0], mem.shot[1]] };
+  };
+  // board cell → table position: each player's own sea lies in front of them, the rival's across the table
+  function cellPos(k, x, y) { return atSeat(k, 2, (x - 4.5) * C, TY, BZ + (y - 4.5) * C); }
+  function pickCell(k) {
+    if (!ptr.valid) return null;
+    const s = sgnS(k), lx = ptr.x * s, lz = ptr.z * s, x = Math.round(lx / C + 4.5), y = Math.round((lz - BZ) / C + 4.5);
+    return x >= 0 && x < N && y >= 0 && y < N ? [x, y] : null;
+  }
+  g.local = (V, side) => {
+    if (ctl.tn !== V.tn || ctl.mid !== V.mid) { ctl.tn = V.tn; ctl.mid = V.mid; ctl.out = ctl.out && ctl.out.keep ? ctl.out : {}; }
+    const act = ctl.act; ctl.act = null;
+    if (V.win != null) return {};
+    if (V.ph === 'place') {
+      if (act === 'shuffle') { ctl.shuf = (ctl.shuf || V.shuf[side]) + 1; }
+      if (act === 'ready') ctl.ready = V.mid;
+      return { shuffle: [V.mid, ctl.shuf || 0], ready: ctl.ready === V.mid ? [V.mid] : null };
+    }
+    if (V.turn !== side) return ctl.out;
+    if (ptr.pressed && !ptr.kbd) {
+      const c = pickCell(1 - side);
+      if (c && !V.shots[1 - side][c[1] * N + c[0]]) ctl.out = { shot: [V.mid, V.tn, c[0], c[1]] };
+      else if (c) toast('Você já atirou aí.');
+    }
+    return ctl.out;
+  };
+  g.actions = (V, vs) => vs == null || V.win != null || V.ph !== 'place' || V.ready[vs] || ctl.ready === V.mid ? [] : [{ id: 'shuffle', label: 'Embaralhar navios', ghost: true }, { id: 'ready', label: 'Pronto!', pink: true }];
+  g.pack = (S, seat) => ({ n: 2, fleet: S.fleet.map((f, k) => k === seat || S.win != null ? f : f.filter((_, i) => sunk(S, k, i))), shots: S.shots, ready: S.ready, shuf: S.shuf, ph: S.ph, turn: S.turn, last: S.last, tm: r3(S.tm), tn: S.tn, mid: S.mid, win: S.win });
+  g.unpack = d => {
+    const ship = s => ({ x: sanInt(s && s.x, 0, 9, 0), y: sanInt(s && s.y, 0, 9, 0), len: sanInt(s && s.len, 2, 5, 2), dir: s && s.dir ? 1 : 0 });
+    const L = d.last && typeof d.last === 'object' ? d.last : null;
+    return { n: 2, fleet: [0, 1].map(k => (Array.isArray(d.fleet && d.fleet[k]) ? d.fleet[k] : []).slice(0, 5).map(ship)), shots: [0, 1].map(k => A(d.shots && d.shots[k], N * N).map(v => sanInt(v, 0, 2, 0))),
+      ready: [!!(d.ready && d.ready[0]), !!(d.ready && d.ready[1])], shuf: A(d.shuf, 2), ph: ['place', 'fire'].includes(d.ph) ? d.ph : 'place', turn: d.turn === 1 ? 1 : 0,
+      last: L ? { k: L.k === 1 ? 1 : 0, x: sanInt(L.x, 0, 9, 0), y: sanInt(L.y, 0, 9, 0), res: ['miss', 'hit', 'sunk'].includes(L.res) ? L.res : 'miss', len: sanInt(L.len, 0, 5, 0) } : null,
+      tm: num(d.tm, 0), tn: num(d.tn, 0), mid: d.mid, win: d.win === 0 || d.win === 1 ? d.win : null };
+  };
+  g.build = sc => {
+    buildCardTable(sc, { title: 'BATALHA NAVAL' });
+    const sea = canvasTex(512, 512, c => {
+      const gr = c.createLinearGradient(0, 0, 512, 512); gr.addColorStop(0, '#0f4c7a'); gr.addColorStop(1, '#0b3558');
+      c.fillStyle = gr; c.fillRect(0, 0, 512, 512);
+      c.strokeStyle = 'rgba(160,210,255,.12)'; c.lineWidth = 2;
+      for (let i = 0; i < 30; i++) { const y = Math.random() * 512; c.beginPath(); c.moveTo(0, y); for (let x = 0; x <= 512; x += 16) c.lineTo(x, y + Math.sin(x * .05 + i) * 3); c.stroke(); }
+      c.strokeStyle = 'rgba(200,230,255,.45)'; c.lineWidth = 2; for (let i = 0; i <= 10; i++) { c.beginPath(); c.moveTo(i * 51.2, 0); c.lineTo(i * 51.2, 512); c.stroke(); c.beginPath(); c.moveTo(0, i * 51.2); c.lineTo(512, i * 51.2); c.stroke(); }
+    });
+    const frameMat = lacquer('#c9cfd8', .3, { metalness: .6 });
+    for (const k of [0, 1]) {
+      const p = atSeat(k, 2, 0, TY + .002, BZ), pl = new THREE.Mesh(new THREE.PlaneGeometry(N * C, N * C), mat('#ffffff', .25, 0, { map: sea, envMapIntensity: .8 }));
+      pl.rotation.x = -Math.PI / 2; pl.position.set(p.x, p.y, p.z); pl.rotation.z = 0; pl.receiveShadow = true; sc.add(pl);
+      const fr = new THREE.Mesh(new THREE.TorusGeometry(N * C * .72, .006, 4, 4), frameMat); fr.rotation.x = Math.PI / 2; fr.rotation.z = Math.PI / 4; fr.position.set(p.x, TY + .004, p.z); sc.add(fr);
+    }
+    const grey = lacquer('#7d8794', .4, { metalness: .5 }), dark = lacquer('#3a3f48', .5), deck = lacquer('#5c6672', .5);
+    m = {
+      ships: glideSet(sc, it => {
+        const gr = new THREE.Group(), L = it.len * C * .92, hull = box(L, .022, C * .62, it.sunk ? dark : grey, 0, .011, 0); gr.add(hull);
+        const bow = new THREE.Mesh(new THREE.ConeGeometry(C * .31, C * .5, 4), it.sunk ? dark : grey); bow.rotation.z = -Math.PI / 2; bow.rotation.x = Math.PI / 4; bow.scale.set(1, 1, .7); bow.position.set(L / 2 + C * .2, .011, 0); gr.add(bow);
+        gr.add(box(C * .9, .02, C * .4, deck, -L * .12, .032, 0));
+        if (it.len >= 4) gr.add(box(L * .5, .006, C * .5, deck, L * .1, .025, 0));
+        const mast = cyl(.003, .003, .05, dark, 8); mast.position.set(-L * .12, .06, 0); gr.add(mast);
+        return shadowAll(gr);
+      }),
+      pegs: piecePool(sc, key => { const me = cyl(.008, .009, .022, key === 'r' ? mat('#e23a3a', .35, 0, { emissive: '#ff3b30', emissiveIntensity: .8 }) : mat('#f4f4f4', .4), 14); return me; }),
+      hover: (() => { const r = new THREE.Mesh(new THREE.RingGeometry(.016, .022, 24), new THREE.MeshBasicMaterial({ color: '#ffc95c', transparent: true, opacity: 0, depthWrite: false })); r.rotation.x = -Math.PI / 2; sc.add(r); return r; })()
+    };
+  };
+  g.render = (V, dt, o) => {
+    const me = o.local ? o.side : null, items = [];
+    for (const k of [0, 1]) V.fleet[k].forEach((sh, i) => {
+      const cs = cellsOf(sh), a = cellPos(k, cs[0][0], cs[0][1]), b = cellPos(k, cs[cs.length - 1][0], cs[cs.length - 1][1]);
+      const isSunk = cs.every(([x, y]) => V.shots[k][y * N + x] === 2), mine = me === k || me == null;
+      if (!mine && !isSunk) return;
+      items.push({ key: 'ship' + k + '_' + i + (isSunk ? 's' : ''), len: sh.len, sunk: isSunk, x: (a.x + b.x) / 2, y: TY + .002 - (isSunk ? .008 : 0), z: (a.z + b.z) / 2, ry: Math.atan2(-(b.z - a.z), b.x - a.x), from: { x: (a.x + b.x) / 2, y: TY + .15, z: (a.z + b.z) / 2, ry: Math.atan2(-(b.z - a.z), b.x - a.x) } });
+    });
+    m.ships.frame(items, dt, .03);
+    m.pegs.begin();
+    for (const k of [0, 1]) for (let i = 0; i < N * N; i++) if (V.shots[k][i]) { const p = cellPos(k, i % N, Math.floor(i / N)), pg = m.pegs.get(V.shots[k][i] === 2 ? 'r' : 'w'); pg.position.set(p.x, TY + .016, p.z); }
+    m.pegs.end();
+    const aim = me != null && V.ph === 'fire' && V.turn === me && V.win == null ? pickCell(1 - me) : null;
+    if (aim) { const p = cellPos(1 - me, aim[0], aim[1]); m.hover.position.set(p.x, TY + .004, p.z); }
+    m.hover.material.opacity += ((aim && !V.shots[1 - me][aim[1] * N + aim[0]] ? .95 : 0) - m.hover.material.opacity) * lerpK(dt, 14);
+    return null;
+  };
+  const coord = (x, y) => 'ABCDEFGHIJ'[x] + (y + 1);
+  g.hud = (V, vs) => {
+    const nm = names(vs), L = V.last;
+    let line;
+    if (V.ph === 'place') line = vs != null && !V.ready[vs] && ctl.ready !== V.mid ? 'Posicione sua frota: embaralhe até gostar e aperte Pronto' : 'Esperando ' + (vs == null ? 'os jogadores' : nm[1 - vs]) + ' posicionar a frota…';
+    else {
+      const shotTxt = L ? nm[L.k] + (L.res === 'miss' ? ' errou (' + coord(L.x, L.y) + ')' : L.res === 'hit' ? ' acertou (' + coord(L.x, L.y) + ')!' : ' afundou o ' + SHIP_NAME[L.len] + '!') + ' · ' : '';
+      line = shotTxt + (V.win != null ? '' : vs != null && V.turn === vs ? 'Sua vez: toque no mar do adversário' : 'Vez de ' + nm[V.turn]);
+    }
+    // ships still afloat = 5 minus the sunk ones (a guest never receives the rival's floating ships)
+    return { sc: [0, 1].map(k => FLEET.length - V.fleet[k].filter((_, i) => sunk(V, k, i)).length), line };
+  };
+  g.winner = V => V.win;
+  g.result = (V, vs) => winTitle(V, vs, V.win, false);
+  g.overText = () => 'Afundou a frota inteira do adversário.';
+  return g;
+})();
+
+const GAMES = { pong: Pong, toto: Toto, pool: Pool, botao: Botao, damas: Damas, xadrez: Xadrez, gamao: Gamao, oito: Oito, truco: Truco, poker: Poker, buraco: Buraco, vinte1: Vinte1, airhockey: AirHockey, domino: Domino, ludo: Ludo, roleta: Roleta, general: General, sueca: Sueca, naval: Naval };
 
 // ================= runtime =================
 // A match has nSeats seats. Seat 0 is the local player (CPU mode) or the host; online guests sit in seats 1…n-1;
@@ -4664,12 +5161,21 @@ function seatKind(s) {   // 'me' | 'human' | 'cpu'
   if (mode === 'guest') return s === hostInfo.seat ? 'me' : hostInfo.kinds[s] === 'h' ? 'human' : 'cpu';
   return 'cpu';
 }
+// player nicknames: plain text only, short
+const cleanNick = v => String(v == null ? '' : v).replace(/[\u0000-\u001f<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, 16);
+let myNick = '';
+try { myNick = cleanNick(localStorage.getItem('arena.nick')); } catch {}
+function nickOf(s) {
+  if (mode === 'host') { if (s === 0) return myNick; const p = seats[s] && room && room.peers().find(q => q.peer === seats[s]); return p && p.presence ? cleanNick(p.presence.nick) : ''; }
+  if (mode === 'guest') return cleanNick(hostInfo.nicks && hostInfo.nicks[s]);
+  return '';
+}
 function names(vs) {
   const out = [];
   for (let s = 0; s < nSeats; s++) {
     if (mode === 'menu') { out.push(nSeats === 2 ? ['Azul', 'Vermelho'][s] : 'Jogador ' + (s + 1)); continue; }
     const k = seatKind(s);
-    out.push(k === 'me' ? 'Você' : k === 'cpu' ? (nSeats === 2 ? 'CPU' : 'CPU ' + (s + 1)) : (nSeats === 2 && vs != null ? 'Rival' : 'Jogador ' + (s + 1)));
+    out.push(k === 'me' ? 'Você' : k === 'cpu' ? (nSeats === 2 ? 'CPU' : 'CPU ' + (s + 1)) : (nickOf(s) || (nSeats === 2 && vs != null ? 'Rival' : 'Jogador ' + (s + 1))));
   }
   return out;
 }
@@ -4897,13 +5403,13 @@ function renderLobby() {
   const list = $('lobbyRoster'); list.textContent = '';
   for (let s = 0; s < nSeats; s++) {
     const li = document.createElement('li'), dot = document.createElement('i'); dot.style.background = SEAT_COLS[s % 6];
-    const txt = document.createElement('span'); txt.textContent = s === 0 ? 'Você (anfitrião)' : seats[s] ? 'Jogador ' + (s + 1) + ' conectado' : 'Lugar livre · a CPU joga se começar agora';
+    const txt = document.createElement('span'); txt.textContent = s === 0 ? (myNick || 'Você') + ' (anfitrião)' : seats[s] ? (nickOf(s) || 'Jogador ' + (s + 1)) + ' conectado' : 'Lugar livre · a CPU joga se começar agora';
     li.className = s === 0 || seats[s] ? 'in' : ''; li.append(dot, txt); list.append(li);
   }
   const humans = seats.filter(Boolean).length;
   $('btnStart').disabled = humans === 0;
   $('btnStart').textContent = humans === 0 ? 'Aguardando jogadores…' : humans < nSeats - 1 ? 'Começar (CPU completa a mesa)' : 'Começar';
-  $('lobbyHint').textContent = nSeats === 2 ? 'Mande o código para o seu oponente. A partida começa quando ele entrar.' : 'Mande o código para até ' + (nSeats - 1) + ' amigos. Comece quando quiser: os lugares vazios ficam com a CPU.';
+  $('lobbyHint').textContent = nSeats === 2 ? 'Mande o link (ou o código) para o seu oponente. A partida começa quando ele entrar.' : 'Mande o link (ou o código) para até ' + (nSeats - 1) + ' amigos. Comece quando quiser: os lugares vazios ficam com a CPU.';
 }
 function setRoomSeats(n) {
   if (started) return;
@@ -4915,10 +5421,10 @@ function setRoomSeats(n) {
 function startMatch() { started = true; newMatch(nSeats); showDialog(null); showGameUi(true); toast('Valendo!'); }
 function onHostPeers(ch) {
   const gs = ch.peers.filter(p => !p.sameTab && p.presence && p.presence.role === 'guest'), ids = new Set(gs.map(p => p.peer));
-  for (let s = 1; s < nSeats; s++) if (seats[s] && !ids.has(seats[s])) { seats[s] = null; toast(started ? 'O jogador ' + (s + 1) + ' saiu · a CPU assumiu o lugar' : 'Um jogador saiu da sala'); }
+  for (let s = 1; s < nSeats; s++) if (seats[s] && !ids.has(seats[s])) { const who = nickOf(s) || 'O jogador ' + (s + 1); seats[s] = null; toast(started ? who + ' saiu · a CPU assumiu o lugar' : who + ' saiu da sala'); }
   if (!started) {
     for (const p of gs.slice().sort((a, b) => a.peer < b.peer ? -1 : 1)) if (!seats.includes(p.peer)) {
-      const free = seats.findIndex((x, s) => s > 0 && !x); if (free > 0) { seats[free] = p.peer; toast('Jogador ' + (free + 1) + ' entrou'); tone(880, .08, { vol: .08 }); }
+      const free = seats.findIndex((x, s) => s > 0 && !x); if (free > 0) { seats[free] = p.peer; toast((cleanNick(p.presence.nick) || 'Jogador ' + (free + 1)) + ' entrou'); tone(880, .08, { vol: .08 }); }
     }
   }
   for (const p of gs) readChat(p.presence, seats.indexOf(p.peer));
@@ -4927,7 +5433,7 @@ function onHostPeers(ch) {
 function sendHost(now) {
   if (!room || now - lastSend < 33) return;
   lastSend = now;
-  const common = { role: 'host', game: G.id, n: nSeats, started, kinds: range(nSeats).map(s => s === 0 || seats[s] ? 'h' : 'c'),
+  const common = { role: 'host', game: G.id, n: nSeats, started, kinds: range(nSeats).map(s => s === 0 || seats[s] ? 'h' : 'c'), nicks: range(nSeats).map(nickOf),
     ev: S && started ? (S._evs || []).slice(-8) : [], chat: myChat.map(([i, t]) => [i, t, 0]).concat(relay).slice(-16) };
   room.presence(common, pid => { const seat = seats.indexOf(pid); return { seat, st: S && started ? G.pack(S, seat) : null }; });
 }
@@ -4944,7 +5450,7 @@ async function joinRoom() {
   mode = 'guest'; V = null; S = null; ctl = {};
   unsub.push(room.onConnection(setNet));
   unsub.push(room.onPeers(onGuestPeers));
-  room.presence({ role: 'guest', in: null }).catch(() => {});
+  room.presence({ role: 'guest', in: null, nick: myNick }).catch(() => {});
   setNet(room.connected());
   setTimeout(() => {
     if (mode === 'guest' && !hadHost && code === c) showMsg('SALA ' + code, 'Sala vazia', 'Ninguém abriu esta sala ainda. Confira o código ou espere o anfitrião. Você entra assim que ele aparecer.');
@@ -4965,7 +5471,7 @@ function onGuestPeers(ch) {
   if (!gid) return;
   if (!G || G.id !== gid) { buildGame(gid); V = null; }
   nSeats = clamp(Math.round(num(pr.n, 2)), 1, 8);
-  hostInfo = { seat: Number.isInteger(pr.seat) && pr.seat < nSeats ? pr.seat : -1, kinds: Array.isArray(pr.kinds) ? pr.kinds.slice(0, 8).map(String) : [] };
+  hostInfo = { seat: Number.isInteger(pr.seat) && pr.seat < nSeats ? pr.seat : -1, kinds: Array.isArray(pr.kinds) ? pr.kinds.slice(0, 8).map(String) : [], nicks: Array.isArray(pr.nicks) ? pr.nicks.slice(0, 8).map(cleanNick) : [] };
   readChat(pr, 0);
   if (!pr.started || !pr.st) {
     V = null; showGameUi(false);
@@ -4994,7 +5500,7 @@ function sendGuest(now, inp) {
   const s = JSON.stringify(inp) + myChat.length + (myChat.length ? myChat[myChat.length - 1][0] : '');
   if (s === lastSentIn) return;
   lastSend = now; lastSentIn = s;
-  room.presence({ role: 'guest', in: inp, chat: myChat }).catch(() => {});
+  room.presence({ role: 'guest', in: inp, chat: myChat, nick: myNick }).catch(() => {});
 }
 
 // ================= chat =================
@@ -5083,6 +5589,8 @@ document.querySelectorAll('.card[data-game]').forEach(c => c.addEventListener('c
 $('btnCreate').onclick = createRoom;
 $('btnJoin').onclick = joinRoom;
 $('btnStart').onclick = () => { if (mode === 'host' && !started && seats.some(Boolean)) startMatch(); };
+$('nickIn').value = myNick;
+$('nickIn').addEventListener('input', e => { myNick = cleanNick(e.target.value); try { localStorage.setItem('arena.nick', myNick); } catch {} });
 $('codeIn').addEventListener('input', e => { e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4); });
 $('codeIn').addEventListener('keydown', e => { if (e.key === 'Enter' && !$('btnJoin').disabled) joinRoom(); });
 $('btnCpu').onclick = async () => {
@@ -5090,13 +5598,17 @@ $('btnCpu').onclick = async () => {
   mode = 'cpu'; buildGame(selGame); newMatch(prefSeats(selGame)); V = null;
   showDialog(null); showGameUi(true); canvas.focus();
 };
+const roomLink = () => location.href.split('#')[0] + '#sala=' + code;
+$('btnShare').hidden = !navigator.share;
+$('btnShare').onclick = () => { navigator.share({ title: 'Arena de Mesa · ' + GAME_NAMES[G.id], text: 'Bora jogar ' + GAME_NAMES[G.id] + '? Sala ' + code, url: roomLink() }).catch(() => {}); };
 $('btnCopy').onclick = () => {
-  const done = () => toast('Código copiado');
+  const done = () => toast('Link copiado · código ' + code);
   const fallback = () => { const r = document.createRange(); r.selectNodeContents($('lobbyCode')); const s = getSelection(); s.removeAllRanges(); s.addRange(r); toast('Selecione e copie o código'); };
-  try { navigator.clipboard.writeText(code).then(done, fallback); } catch { fallback(); }
+  try { navigator.clipboard.writeText(roomLink()).then(done, fallback); } catch { fallback(); }
 };
 async function toHome() {
   await leaveRoom();
+  if (location.hash) history.replaceState(null, '', location.pathname + location.search);
   mode = 'menu'; buildGame(selGame); newMatch(prefSeats(selGame)); V = null;
   showGameUi(false); showDialog('home'); markCards();
 }
@@ -5171,12 +5683,14 @@ function frame(now) {
     updateFx(paused ? 0 : dt);
     draw();
   }
-  ptr.fresh = false; ptr.pressed = false; ptr.released = false;
+  ptr.fresh = false; ptr.pressed = false; ptr.released = false; for (const k in digitPressed) delete digitPressed[k];
   requestAnimationFrame(frame);
 }
 
 markCards();
 buildGame(selGame); newMatch(prefSeats(selGame));
+// opened from a shared link: join that room right away
+{ const mm = /sala=([A-Za-z0-9]{4})/.exec(location.hash); if (mm && net) { $('codeIn').value = mm[1].toUpperCase(); setTimeout(joinRoom, 300); } }
 camPos.set(0, G.cam.h * 1.2, G.cam.d * 1.3);
 requestAnimationFrame(frame);
 })();
