@@ -100,6 +100,22 @@ input.code{font:700 18px var(--ui);letter-spacing:.38em;text-transform:uppercase
 .pbar{width:100%;height:10px;border-radius:999px;background:rgba(16,18,28,.85);border:1px solid var(--line);overflow:hidden}
 .pbar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--a),var(--gold),var(--b))}
 #help{position:fixed;left:0;right:0;bottom:0;padding:0 16px calc(12px + env(safe-area-inset-bottom,0px));text-align:center;color:var(--dim);font-size:12.5px;pointer-events:none;z-index:2}
+/* ---- chat (online only) ---- */
+#chat{position:fixed;left:16px;bottom:calc(44px + env(safe-area-inset-bottom,0px));z-index:4;display:flex;flex-direction:column-reverse;align-items:flex-start;gap:8px;max-width:calc(100vw - 32px)}
+#chatBadge{display:inline-grid;place-items:center;min-width:18px;height:18px;margin-left:7px;padding:0 4px;box-sizing:border-box;border-radius:999px;background:var(--b);color:#fff;font-size:11px;letter-spacing:0}
+#chatPanel{width:min(340px,calc(100vw - 32px));background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px;box-sizing:border-box;display:flex;flex-direction:column;gap:8px;backdrop-filter:blur(6px)}
+#chatLog{max-height:min(220px,30vh);overflow-y:auto;display:flex;flex-direction:column;gap:4px;font-size:14px;line-height:1.35}
+#chatLog:empty::before{content:"Diga oi para o seu oponente 👋";color:var(--dim);font-size:13px;padding:4px 2px}
+#chatLog p{margin:0;padding:6px 10px;border-radius:10px;max-width:85%;overflow-wrap:anywhere;background:#1b1f2e;align-self:flex-start}
+#chatLog p.me{align-self:flex-end;background:#16324a}
+#chatLog p b{display:block;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);font-weight:600}
+.quick{display:flex;gap:6px;flex-wrap:wrap}
+.quick button{all:unset;cursor:pointer;font:600 12px var(--ui);padding:5px 10px;border-radius:999px;border:1px solid var(--line);color:var(--ink)}
+.quick button:hover{border-color:#3a3f55}
+.quick button:focus-visible{outline:2px solid var(--gold);outline-offset:1px}
+#chatForm{display:flex;gap:6px;margin:0}
+#chatIn{flex:1;min-width:0;font:500 16px var(--ui);padding:8px 10px;border-radius:6px;border:1px solid var(--line);background:#0e1018;color:var(--ink)}
+#chatForm .btn{padding:8px 12px}
 #toast{position:fixed;left:50%;top:96px;transform:translateX(-50%);background:#141725;border:1px solid var(--line);padding:8px 16px;border-radius:999px;font-size:14px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:9;white-space:nowrap}
 #toast.show{opacity:1}
 #fatal{position:fixed;inset:0;display:grid;place-items:center;padding:16px;text-align:center;color:var(--dim);z-index:20;background:var(--bg)}
@@ -132,6 +148,14 @@ input.code{font:700 18px var(--ui);letter-spacing:.38em;text-transform:uppercase
 <div id="big"></div>
 <div id="power" hidden><div class="pbar"><i id="pfill"></i></div><span>Força</span></div>
 <div id="help" hidden></div>
+<div id="chat" hidden>
+  <button class="chip" id="btnChat" aria-expanded="false" aria-controls="chatPanel">Chat<b id="chatBadge" hidden>0</b></button>
+  <div id="chatPanel" hidden>
+    <div id="chatLog" aria-live="polite"></div>
+    <div class="quick" id="chatQuick"><button type="button">Boa!</button><button type="button">Quase!</button><button type="button">Que jogada!</button><button type="button">GG</button><button type="button">Revanche?</button></div>
+    <form id="chatForm" autocomplete="off"><input id="chatIn" maxlength="200" placeholder="Mensagem…" aria-label="Mensagem"><button class="btn" type="submit">Enviar</button></form>
+  </div>
+</div>
 <div id="toast"></div>
 
 <!-- Home -->
@@ -145,7 +169,7 @@ input.code{font:700 18px var(--ui);letter-spacing:.38em;text-transform:uppercase
     <div class="cards" id="cards">
       <button class="card" data-game="pong" style="--acc:#38b6ff" aria-pressed="false">
         <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="20" cy="20" r="12"/><path d="M28.5 28.5 39 39"/><circle cx="38" cy="12" r="3" stroke-dasharray="2 3"/></svg>
-        <span class="tag">Tempo real</span><b>Ping-pong</b><small>Só as raquetes aparecem. A bola é fantasma: siga o quique e o som.</small>
+        <span class="tag">Tempo real</span><b>Ping-pong</b><small>Raquete livre pela sua metade da mesa. Avance para cortar. Primeiro a 7 vence.</small>
       </button>
       <button class="card" data-game="toto" style="--acc:#ffc95c" aria-pressed="false">
         <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 16h40"/><circle cx="16" cy="11" r="3"/><path d="M16 16v14M12 30h8"/><circle cx="32" cy="11" r="3"/><path d="M32 16v14M28 30h8"/><circle cx="24" cy="40" r="3"/></svg>
@@ -428,6 +452,7 @@ addEventListener('keydown', e => {
 });
 addEventListener('keyup', e => {
   if (KEYS[e.code]) keys[KEYS[e.code]] = false;
+  if (e.target && e.target.tagName === 'INPUT') return;
   if (e.code === 'Space' && mode !== 'menu') { ptr.released = true; ptr.kbd = true; }
 });
 addEventListener('blur', () => { for (const k in keys) keys[k] = false; });
@@ -634,15 +659,18 @@ function cueAim(V, o) {
 }
 
 // ======================================================================
-// GAME 1: PING-PONG (bola fantasma)
+// GAME 1: PING-PONG
 // ======================================================================
 const Pong = (() => {
-  const TL = 1.37, TW = 0.7625, PZ = 1.5, PX = 0.92, PR = 0.14, BR = 0.02, WIN = 7, PSPD = 2.8;
-  const g = { id: 'pong', realtime: true, planeY: 0.13, fxY: 0.0, halfW: PX, cam: { h: 1.35, d: 3.0, lz: -0.35 }, ghostable: true,
-    help: 'Mova o mouse ou arraste o dedo para mexer a raquete · A/D ou ←/→. A bola é invisível: siga os clarões na mesa e o som.' };
+  // Paddles move freely in their own half: x across the table, depth q from the net (ZMIN) to well behind the end line (ZMAX).
+  // Depth is mirrored per side, so q means "distance from the net" for both players.
+  const TL = 1.37, TW = 0.7625, PZ = 1.5, PX = 0.92, PR = 0.14, BR = 0.02, WIN = 7, PSPD = 3.4, ZMIN = 0.25, ZMAX = 1.85, OUT = ZMAX + 0.35;
+  const g = { id: 'pong', realtime: true, planeY: 0.13, fxY: 0.0, halfW: PX, cam: { h: 1.55, d: 3.45, lz: -0.15 }, ghostable: true,
+    help: 'Mova o mouse ou arraste o dedo: a raquete anda para os lados, para frente e para trás · WASD ou setas. Avance contra a bola para cortar mais forte.' };
   let m = {};
+  const sgn = k => k === 0 ? 1 : -1;
   g.build = sc => {
-    m = { sm: [0, 0], prev: [0, 0] };
+    m = { sx: [0, 0], sq: [PZ, PZ], prev: [0, 0] };
     const blue = mat('#1b4a86', .6, 0, { envMapIntensity: .6 }), white = mat('#f3f5fb', .5), dark = mat('#15161c', .6), metal = mat('#a3abbd', .3, .8);
     sc.add(box(2 * TW, 0.04, 2 * TL, blue, 0, -0.02, 0));
     const L = (w, d, x, z) => sc.add(box(w, 0.002, d, white, x, 0.001, z, false));
@@ -659,13 +687,13 @@ const Pong = (() => {
     net.position.set(0, 0.076, 0); sc.add(net);
     for (const sx of [-1, 1]) { const p = cyl(0.01, 0.01, 0.17, metal); p.position.set(sx * (TW + 0.15), 0.085, 0); sc.add(p); }
     const glass = new THREE.MeshStandardMaterial({ color: '#9fc7ff', transparent: true, opacity: .1, roughness: .1, emissive: '#2a4f8a', emissiveIntensity: .4, depthWrite: false });
-    for (const sx of [-1, 1]) sc.add(box(0.008, 0.07, 2 * PZ + 0.1, glass, sx * (PX + 0.04), 0.035, 0, false));
+    for (const sx of [-1, 1]) sc.add(box(0.008, 0.07, 2 * OUT, glass, sx * (PX + 0.04), 0.035, 0, false));
     m.pad = [0, 1].map(s => {
       const gr = new THREE.Group();
       const blade = cyl(0.12, 0.12, 0.014, mat(s ? '#c8203a' : '#1d4fc7', .75), 48); blade.rotation.x = Math.PI / 2;
       const rim = new THREE.Mesh(new THREE.TorusGeometry(0.12, 0.006, 8, 48), mat(COLS[s], .3, 0, { emissive: COLS[s], emissiveIntensity: 1.4 }));
       const handle = box(0.03, 0.11, 0.024, mat('#c9955a', .55), 0, -0.165, 0);
-      gr.add(blade, rim, handle); gr.position.set(0, 0.13, s ? -PZ : PZ); sc.add(gr); return gr;
+      gr.add(blade, rim, handle); gr.position.set(0, 0.13, sgn(s) * PZ); sc.add(gr); return gr;
     });
     m.ball = new THREE.Mesh(new THREE.SphereGeometry(BR, 24, 16), mat('#ffb347', .35, 0, { emissive: '#ff8a00', emissiveIntensity: .3 }));
     m.ball.castShadow = true; sc.add(m.ball);
@@ -675,16 +703,22 @@ const Pong = (() => {
       const k = 0.07 * (1 - i / 14); s.scale.set(k, k, k); s.visible = false; sc.add(s); return s;
     });
   };
-  g.init = () => ({ b: [0, 0, 0, 0], o: 0, p: [0, 0], sc: [0, 0], ph: 'count', tm: 2.6, sd: Math.random() < .5 ? 1 : -1, sp: 0, mid: rid() });
-  function hitBy(S, side) {
-    const off = clamp((S.b[0] - S.p[side]) / PR, -1, 1), ang = off * 0.75;
-    S.sp = Math.min(S.sp * 1.07, 4.6);
-    S.b[2] = Math.sin(ang) * S.sp; S.b[3] = (side === 0 ? -1 : 1) * Math.cos(ang) * S.sp;
-    S.b[1] = side === 0 ? PZ : -PZ; S.o = S.b[1];
+  g.init = () => ({ b: [0, 0, 0, 0], o: 0, p: [0, 0], q: [PZ, PZ], sc: [0, 0], ph: 'count', tm: 2.6, sd: Math.random() < .5 ? 1 : -1, sp: 0, mid: rid(), _q0: [PZ, PZ], _vq: [0, 0] });
+  function hitBy(S, side, q) {
+    const d = sgn(side), off = clamp((S.b[0] - S.p[side]) / PR, -1, 1), ang = off * 0.75;
+    const smash = clamp(-S._vq[side] * 0.3, 0, 1.0);   // paddle moving toward the net adds pace
+    S.sp = Math.min(S.sp * 1.07 + smash, 5.6);
+    S.b[2] = Math.sin(ang) * S.sp; S.b[3] = -d * Math.cos(ang) * S.sp;
+    S.b[1] = d * q; S.o = S.b[1];
     ev(S, 'hit', S.b[0], S.b[1], 1, side);
   }
   g.step = (S, dt, i0, i1) => {
-    [i0, i1].forEach((inp, k) => { const t = clamp(num(inp && inp.x, S.p[k]), -PX, PX); S.p[k] += clamp(t - S.p[k], -PSPD * dt, PSPD * dt); });
+    [i0, i1].forEach((inp, k) => {
+      const tx = clamp(num(inp && inp.x, S.p[k]), -PX, PX), tq = clamp(num(inp && inp.z, S.q[k]), ZMIN, ZMAX);
+      let dx = tx - S.p[k], dq = tq - S.q[k];
+      const dist = Math.hypot(dx, dq), mx = PSPD * dt; if (dist > mx) { dx *= mx / dist; dq *= mx / dist; }
+      S._q0[k] = S.q[k]; S.p[k] += dx; S.q[k] += dq; S._vq[k] = dq / Math.max(dt, 1e-3);
+    });
     if (S.ph === 'count') {
       S.tm -= dt;
       if (S.tm <= 0) { S.ph = 'play'; S.sp = 1.7; const a = rnd(-.35, .35); S.b = [0, 0, Math.sin(a) * S.sp, S.sd * Math.cos(a) * S.sp]; S.o = 0; ev(S, 'serve', 0, 0, 1); }
@@ -699,9 +733,13 @@ const Pong = (() => {
       if (f0 < 0.7 && f1 >= 0.7) ev(S, 'table', b[0], b[1], .8);
       if (b[0] > PX) { b[0] = PX; b[2] = -Math.abs(b[2]); ev(S, 'wall', b[0], b[1], .7); }
       else if (b[0] < -PX) { b[0] = -PX; b[2] = Math.abs(b[2]); ev(S, 'wall', b[0], b[1], .7); }
-      if (b[3] > 0 && pz < PZ && b[1] >= PZ && Math.abs(b[0] - S.p[0]) <= PR + BR) hitBy(S, 0);
-      else if (b[3] < 0 && pz > -PZ && b[1] <= -PZ && Math.abs(b[0] - S.p[1]) <= PR + BR) hitBy(S, 1);
-      if (Math.abs(b[1]) > PZ + 0.4) {
+      // hit when the ball crosses the paddle's (moving) depth plane while coming toward that side
+      for (const k of [0, 1]) {
+        const d = sgn(k); if (b[3] * d <= 0) continue;
+        const qa = S._q0[k] + (S.q[k] - S._q0[k]) * i / n, qb = S._q0[k] + (S.q[k] - S._q0[k]) * (i + 1) / n;
+        if (pz * d < qa && b[1] * d >= qb && Math.abs(b[0] - S.p[k]) <= PR + BR) { hitBy(S, k, qb); break; }
+      }
+      if (Math.abs(b[1]) > OUT) {
         const scorer = b[1] > 0 ? 1 : 0;
         S.sc[scorer]++; ev(S, 'goal', b[0], clamp(b[1], -PZ, PZ), 1, scorer);
         S.b = [0, 0, 0, 0];
@@ -711,40 +749,48 @@ const Pong = (() => {
     }
   };
   g.cpu = (S, side, dt, mem) => {
-    const b = S.b, pz = side === 0 ? PZ : -PZ, coming = S.ph === 'play' && (side === 0 ? b[3] > 0 : b[3] < 0);
+    const b = S.b, d = sgn(side), coming = S.ph === 'play' && b[3] * d > 0;
     // aim error grows with ball speed, so long rallies eventually break the CPU
     const sg = Math.sign(b[3]); if (sg !== mem.sg) { mem.sg = sg; const e = DIFF([.24, .14, .07]) * (0.7 + S.sp / 5); mem.err = rnd(-e, e); }
     let t = 0;
     if (coming) {
-      const tt = (pz - b[1]) / b[3]; let x = b[0] + b[2] * tt;
+      const tt = (d * S.q[side] - b[1]) / b[3]; let x = b[0] + b[2] * tt;
       const span = 2 * PX; x += PX; x = ((x % (2 * span)) + 2 * span) % (2 * span); if (x > span) x = 2 * span - x; x -= PX;
       t = x + (mem.err || 0);
     }
     const v = DIFF([1.45, 1.9, 2.5]);
     mem.x = num(mem.x, 0); mem.x += clamp(t - mem.x, -v * dt, v * dt);
-    return { x: r3(mem.x) };
+    return { x: r3(mem.x), z: DIFF([1.6, 1.5, 1.35]) };
   };
   g.local = (V, side, dt) => {
-    if (ptr.fresh && ptr.valid) ctl.x = ptr.x;
-    const kx = ((keys.right ? 1 : 0) - (keys.left ? 1 : 0)) * (side === 1 ? -1 : 1);
+    const d = sgn(side);
+    if (ptr.fresh && ptr.valid) { ctl.x = ptr.x; ctl.q = ptr.z * d; }
+    const kx = ((keys.right ? 1 : 0) - (keys.left ? 1 : 0)) * d, kq = (keys.down ? 1 : 0) - (keys.up ? 1 : 0);
     if (kx) ctl.x = num(ctl.x, 0) + kx * 2.4 * dt;
-    ctl.x = clamp(num(ctl.x, 0), -PX, PX);
-    ctl.px = num(ctl.px, ctl.x); ctl.px += clamp(ctl.x - ctl.px, -PSPD * dt, PSPD * dt);
-    return { x: r3(ctl.x) };
+    if (kq) ctl.q = num(ctl.q, PZ) + kq * 2.0 * dt;
+    ctl.x = clamp(num(ctl.x, 0), -PX, PX); ctl.q = clamp(num(ctl.q, PZ), ZMIN, ZMAX);
+    // guest-side prediction, same speed cap as the host
+    ctl.px = num(ctl.px, ctl.x); ctl.pq = num(ctl.pq, ctl.q);
+    let dx = ctl.x - ctl.px, dq = ctl.q - ctl.pq; const dist = Math.hypot(dx, dq), mx = PSPD * dt;
+    if (dist > mx) { dx *= mx / dist; dq *= mx / dist; }
+    ctl.px += dx; ctl.pq += dq;
+    return { x: r3(ctl.x), z: r3(ctl.q) };
   };
-  g.pack = S => ({ b: S.b.map(r3), o: r3(S.o), p: S.p.map(r3), sc: S.sc, ph: S.ph, tm: r3(S.tm), sd: S.sd, mid: S.mid });
-  g.unpack = d => ({ b: A(d.b, 4), o: num(d.o, 0), p: A(d.p, 2), sc: A(d.sc, 2), ph: PHASE(d.ph), tm: num(d.tm, 0), sd: num(d.sd, 1), mid: d.mid });
+  g.pack = S => ({ b: S.b.map(r3), o: r3(S.o), p: S.p.map(r3), q: S.q.map(r3), sc: S.sc, ph: S.ph, tm: r3(S.tm), sd: S.sd, mid: S.mid });
+  g.unpack = d => ({ b: A(d.b, 4), o: num(d.o, 0), p: A(d.p, 2), q: A(d.q, 2, PZ), sc: A(d.sc, 2), ph: PHASE(d.ph), tm: num(d.tm, 0), sd: num(d.sd, 1), mid: d.mid });
   function ballY(z, o, vz) {
-    const zt = vz > 0 ? PZ : -PZ, f = clamp((z - o) / (zt - o), 0, 1.3);
+    const zt = vz > 0 ? PZ : -PZ, f = Math.max(0, (z - o) / (zt - o));
     if (f < 0.7) { const u = f / 0.7; return BR + (o === 0 ? 0.16 : 0.12) * (1 - u) + 0.22 * 4 * u * (1 - u); }
-    const u = (f - 0.7) / 0.3; return BR + 0.12 * u + 0.16 * 4 * u * (1 - u);
+    if (f <= 1) { const u = (f - 0.7) / 0.3; return BR + 0.12 * u + 0.16 * 4 * u * (1 - u); }
+    return Math.max(BR + 0.03, BR + 0.12 - 0.1 * (f - 1));   // past the end line it drifts down slowly
   }
   g.render = (V, dt, o) => {
     for (const k of [0, 1]) {
-      let x = (o.local && k === o.side && mode === 'guest') ? ctl.px : V.p[k];
-      m.sm[k] += (x - m.sm[k]) * o.smooth;
-      const pad = m.pad[k], vx = (m.sm[k] - m.prev[k]) / Math.max(dt, 1e-3); m.prev[k] = m.sm[k];
-      pad.position.x = m.sm[k];
+      const pred = o.local && k === o.side && mode === 'guest';
+      const x = pred ? ctl.px : V.p[k], q = pred ? ctl.pq : V.q[k];
+      m.sx[k] += (x - m.sx[k]) * o.smooth; m.sq[k] += (q - m.sq[k]) * o.smooth;
+      const pad = m.pad[k], vx = (m.sx[k] - m.prev[k]) / Math.max(dt, 1e-3); m.prev[k] = m.sx[k];
+      pad.position.x = m.sx[k]; pad.position.z = sgn(k) * m.sq[k];
       pad.rotation.z += (clamp(-vx * 0.12, -0.5, 0.5) - pad.rotation.z) * lerpK(dt, 12);
       pad.rotation.x = (k === 0 ? -1 : 1) * 0.25;
     }
@@ -1358,10 +1404,10 @@ const GAMES = { pong: Pong, toto: Toto, pool: Pool, botao: Botao };
 let G = null, scene = null, S = null, V = null;
 let mode = 'menu';                 // menu | cpu | host | guest
 let cpuMem = [{}, {}];
-let ghost = true, paused = false;
+let ghost = false, paused = false;
 let selGame = 'pong';
 try { const s = localStorage.getItem('arena.game'); if (GAMES[s]) selGame = s; } catch {}
-try { if (localStorage.getItem('arena.ghost') === '0') ghost = false; } catch {}
+try { if (localStorage.getItem('arena.ghost') === '1') ghost = true; } catch {}
 let overMid = null, demoReset = 0;
 
 function disposeScene(sc) {
@@ -1435,7 +1481,10 @@ function updateHud(view, el) {
   $('power').hidden = !showP;
   if (showP) $('pfill').style.width = Math.round(h.power * 100) + '%';
 }
-function showGameUi(on) { $('hud').hidden = !on; $('help').hidden = !on; if (!on) { $('power').hidden = true; setText('big', ''); } }
+function showGameUi(on) {
+  $('hud').hidden = !on; $('help').hidden = !on; if (!on) { $('power').hidden = true; setText('big', ''); }
+  $('chat').hidden = !(on && room && (mode === 'host' || mode === 'guest'));
+}
 const dialogs = ['home', 'lobby', 'msg', 'over'];
 function showDialog(id) { dialogs.forEach(d => $(d).hidden = d !== id); }
 function showMsg(eye, title, text) { $('msgEye').textContent = eye; $('msgTitle').textContent = title; $('msgText').textContent = text; showDialog('msg'); }
@@ -1550,7 +1599,7 @@ async function leaveRoom() {
   unsub.forEach(f => { try { f(); } catch {} }); unsub = [];
   if (room) { const r = room; room = null; try { await r.leave(); } catch {} }
   guestPeer = null; myPeer = null; hostInfo = { g: null }; hostRef = null; lastEvId = -1; hadHost = false; lastSentIn = '';
-  setNet(false);
+  setNet(false); resetChat();
 }
 
 async function createRoom() {
@@ -1574,7 +1623,7 @@ async function createRoom() {
 function onHostPeers(ch) {
   const ps = ch.peers;
   if (guestPeer && !ps.some(p => p.peer === guestPeer)) {
-    guestPeer = null; S = null; toast('Seu oponente saiu');
+    guestPeer = null; S = null; toast('Seu oponente saiu'); resetChat();
     room && room.presence({ role: 'host', game: G.id, g: null, st: null, ev: [] }).catch(() => {});
     showGameUi(false); showDialog('lobby');
   }
@@ -1582,13 +1631,14 @@ function onHostPeers(ch) {
     const gp = ps.filter(p => !p.sameTab && p.presence && p.presence.role === 'guest').sort((a, b) => a.peer < b.peer ? -1 : 1)[0];
     if (gp) { guestPeer = gp.peer; S = G.init(); ctl = {}; overMid = null; showDialog(null); showGameUi(true); toast('Oponente conectado. Valendo!'); }
   }
+  if (guestPeer) { const gp = ps.find(p => p.peer === guestPeer); if (gp) readChat(gp.presence); }
 }
 function sendHost(now) {
   if (!room || now - lastSend < 33) return;
   lastSend = now;
   const p = (S && guestPeer)
-    ? { role: 'host', game: G.id, g: guestPeer, st: G.pack(S), ev: (S._evs || []).slice(-8) }
-    : { role: 'host', game: G.id, g: null, st: null, ev: [] };
+    ? { role: 'host', game: G.id, g: guestPeer, st: G.pack(S), ev: (S._evs || []).slice(-8), chat: myChat }
+    : { role: 'host', game: G.id, g: null, st: null, ev: [], chat: [] };
   room.presence(p).catch(() => {});
 }
 
@@ -1619,6 +1669,7 @@ function onGuestPeers(ch) {
   }
   hadHost = true;
   if (host.presence === hostRef) return;
+  readChat(host.presence);
   hostRef = host.presence; hostRecv = performance.now();
   const pr = host.presence, gid = typeof pr.game === 'string' && GAMES[pr.game] ? pr.game : null;
   if (!gid) return;
@@ -1649,11 +1700,52 @@ function onGuestPeers(ch) {
 }
 function sendGuest(now, inp) {
   if (!room || now - lastSend < 33) return;
-  const s = JSON.stringify(inp);
+  const s = JSON.stringify(inp) + myChat.length + (myChat.length ? myChat[myChat.length - 1][0] : '');
   if (s === lastSentIn) return;
   lastSend = now; lastSentIn = s;
-  room.presence({ role: 'guest', in: inp }).catch(() => {});
+  room.presence({ role: 'guest', in: inp, chat: myChat }).catch(() => {});
 }
+
+// ================= chat =================
+// Messages ride along in each side's presence: the last CHAT_MAX [id, text] pairs. Receivers show ids they haven't seen.
+const CHAT_MAX = 12;
+let myChat = [], chatSeen = new Set(), chatUnread = 0;
+function chatAdd(who, text, mine) {
+  const log = $('chatLog'), row = document.createElement('p'), b = document.createElement('b');
+  row.className = mine ? 'me' : 'them'; b.textContent = who;
+  row.append(b, document.createTextNode(text));
+  log.append(row); while (log.children.length > 50) log.firstChild.remove();
+  log.scrollTop = log.scrollHeight;
+  if (mine) return;
+  tone(1250, .06, { type: 'triangle', vol: .06 }); tone(1650, .07, { type: 'triangle', vol: .05, delay: .07 });
+  if ($('chatPanel').hidden) { chatUnread++; $('chatBadge').textContent = String(Math.min(chatUnread, 99)); $('chatBadge').hidden = false; toast(who + ': ' + text); }
+}
+function readChat(pres) {
+  const list = pres && Array.isArray(pres.chat) ? pres.chat : [];
+  for (const it of list) {
+    if (!Array.isArray(it)) continue;
+    const id = String(it[0]).slice(0, 40), text = String(it[1] == null ? '' : it[1]).replace(/\s+/g, ' ').trim().slice(0, 200);
+    if (!text || chatSeen.has(id)) continue;
+    chatSeen.add(id); chatAdd('Rival', text, false);
+  }
+}
+function sendChat(raw) {
+  const text = String(raw || '').replace(/\s+/g, ' ').trim().slice(0, 200);
+  if (!text || !room) return;
+  myChat = myChat.concat([[Date.now().toString(36) + rid().toString(36), text]]).slice(-CHAT_MAX);
+  chatAdd('Você', text, true);
+  lastSend = 0;   // let the next frame send right away
+}
+function setChatOpen(open) {
+  $('chatPanel').hidden = !open; $('btnChat').setAttribute('aria-expanded', String(open));
+  $('help').style.visibility = open ? 'hidden' : '';
+  if (open) { chatUnread = 0; $('chatBadge').hidden = true; const log = $('chatLog'); log.scrollTop = log.scrollHeight; }
+}
+function resetChat() { myChat = []; chatSeen = new Set(); chatUnread = 0; $('chatLog').textContent = ''; $('chatBadge').hidden = true; setChatOpen(false); }
+$('btnChat').onclick = () => { const open = $('chatPanel').hidden; setChatOpen(open); if (open && !matchMedia('(pointer: coarse)').matches) $('chatIn').focus(); };
+$('chatForm').addEventListener('submit', e => { e.preventDefault(); sendChat($('chatIn').value); $('chatIn').value = ''; });
+$('chatIn').addEventListener('keydown', e => { if (e.key === 'Escape') { e.stopPropagation(); $('chatIn').blur(); canvas.focus(); } });
+$('chatQuick').addEventListener('click', e => { if (e.target.tagName === 'BUTTON') sendChat(e.target.textContent); });
 
 // ================= UI wiring =================
 function markCards() { document.querySelectorAll('.card').forEach(c => c.setAttribute('aria-pressed', String(c.dataset.game === selGame))); }
