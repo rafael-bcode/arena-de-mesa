@@ -55,7 +55,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--gold);outline-o
 .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(205px,1fr));gap:12px}
 .card.soon{cursor:default;border-style:dashed;--acc:var(--dim);opacity:.75}
 .card.soon:hover{transform:none;border-color:var(--line)}
-.dock{display:flex;flex-direction:column;gap:14px;padding:22px;border:1px solid var(--line);border-radius:16px;background:rgba(12,13,20,.84);backdrop-filter:blur(10px);box-shadow:0 30px 80px -30px #000}
+.dock{display:flex;flex-direction:column;gap:14px;padding:22px;border:1px solid var(--line);border-radius:16px;background:rgba(12,13,20,.94);box-shadow:0 30px 80px -30px #000}
 .pick{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;align-items:center}
 #pickIcon svg{width:46px;height:46px;color:var(--acc,var(--a));display:block}
 .pick h3{font-family:var(--display);font-weight:700;font-size:22px;margin:2px 0 0;line-height:1.1}
@@ -100,7 +100,7 @@ input.code{font:700 18px var(--ui);letter-spacing:.38em;text-transform:uppercase
 .foot{color:var(--dim);font-size:12.5px;margin:0;line-height:1.5;max-width:70ch}
 
 /* ---- centered dialogs ---- */
-.dlg{display:grid;place-items:center;background:rgba(8,9,14,.72);backdrop-filter:blur(4px);padding:16px;box-sizing:border-box}
+.dlg{display:grid;place-items:center;background:rgba(8,9,14,.82);padding:16px;box-sizing:border-box}
 .box{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:24px;max-width:440px;width:100%;box-sizing:border-box;display:flex;flex-direction:column;gap:14px;align-items:center;text-align:center}
 .box h2{font-family:var(--display);font-weight:700;font-size:clamp(22px,4vw,32px);margin:0;text-wrap:balance}
 .box p{margin:0;color:var(--dim);line-height:1.5}
@@ -146,7 +146,7 @@ input.code{font:700 18px var(--ui);letter-spacing:.38em;text-transform:uppercase
 /* ---- chat (online only) ---- */
 #chat{position:fixed;left:16px;bottom:calc(44px + env(safe-area-inset-bottom,0px));z-index:4;display:flex;flex-direction:column-reverse;align-items:flex-start;gap:8px;max-width:calc(100vw - 32px)}
 #chatBadge{display:inline-grid;place-items:center;min-width:18px;height:18px;margin-left:7px;padding:0 4px;box-sizing:border-box;border-radius:999px;background:var(--b);color:#fff;font-size:11px;letter-spacing:0}
-#chatPanel{width:min(340px,calc(100vw - 32px));background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px;box-sizing:border-box;display:flex;flex-direction:column;gap:8px;backdrop-filter:blur(6px)}
+#chatPanel{width:min(340px,calc(100vw - 32px));background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px;box-sizing:border-box;display:flex;flex-direction:column;gap:8px;background:rgba(16,18,28,.97)}
 #chatLog{max-height:min(220px,30vh);overflow-y:auto;display:flex;flex-direction:column;gap:4px;font-size:14px;line-height:1.35}
 #chatLog:empty::before{content:"Diga oi para o seu oponente 👋";color:var(--dim);font-size:13px;padding:4px 2px}
 #chatLog p{margin:0;padding:6px 10px;border-radius:10px;max-width:85%;overflow-wrap:anywhere;background:#1b1f2e;align-self:flex-start}
@@ -241,7 +241,7 @@ input.code{font:700 18px var(--ui);letter-spacing:.38em;text-transform:uppercase
       <div class="cards">
       <button class="card" data-game="pong" style="--acc:#38b6ff" aria-pressed="false">
         <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="20" cy="20" r="12"/><path d="M28.5 28.5 39 39"/><circle cx="38" cy="12" r="3" stroke-dasharray="2 3"/></svg>
-        <b>Ping-pong</b><small>Raquete livre pela sua metade da mesa. Avance para cortar. Primeiro a 7 vence.</small>
+        <b>Ping-pong</b><small>Bola em 3D com rede e quique de verdade. Raquete para os lados e para cima. 11 pontos.</small>
       </button>
       <button class="card" data-game="toto" style="--acc:#ffc95c" aria-pressed="false">
         <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 16h40"/><circle cx="16" cy="11" r="3"/><path d="M16 16v14M12 30h8"/><circle cx="32" cy="11" r="3"/><path d="M32 16v14M28 30h8"/><circle cx="24" cy="40" r="3"/></svg>
@@ -461,9 +461,12 @@ try { renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPrefere
 catch (e) { $('fatal').hidden = false; $('fatal').textContent = 'Seu navegador não conseguiu iniciar o 3D (WebGL). Tente outro navegador ou ative a aceleração de hardware.'; return; }
 // hq = bloom + sharper shadows + full pixel ratio; phones start on the light preset
 let hq = !matchMedia('(pointer: coarse)').matches;
+// 0: bloom, pixel ratio ≤1.5 · 1: bloom, ≤1 · 2: no bloom, ≤1 · 3: no bloom, 0.75 (the auto-tuner walks down this list)
+let perfLevel = 0, inMenu = true;   // inMenu: the home screen's background demo
 try { const q = localStorage.getItem('arena.hq'); if (q === '0' || q === '1') hq = q === '1'; } catch {}
+perfLevel = hq ? 1 : 2;   // "alto" starts at 1x pixels; the tuner only goes down from here
 renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.shadowMap.type = THREE.PCFShadowMap;
 renderer.outputEncoding = THREE.sRGBEncoding;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.0;
@@ -473,7 +476,7 @@ function setupPost() {
   if (composer || !renderer.capabilities.isWebGL2 || !THREE.EffectComposer || !THREE.UnrealBloomPass || !THREE.GammaCorrectionShader) return;
   try {
     const half = renderer.extensions.has('EXT_color_buffer_float');
-    const rt = new THREE.WebGLMultisampleRenderTarget(4, 4, { type: half ? THREE.HalfFloatType : THREE.UnsignedByteType, format: THREE.RGBAFormat });
+    const rt = new THREE.WebGLMultisampleRenderTarget(4, 4, { type: half ? THREE.HalfFloatType : THREE.UnsignedByteType, format: THREE.RGBAFormat }); rt.samples = 2;
     composer = new THREE.EffectComposer(renderer, rt);
     renderPass = new THREE.RenderPass(new THREE.Scene(), camera);
     composer.addPass(renderPass);
@@ -486,12 +489,14 @@ function setupPost() {
 }
 function resize() {
   const w = canvas.clientWidth || innerWidth, h = canvas.clientHeight || innerHeight;
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, hq ? 2 : 1.5));
+  // the menu's background demo never needs more than 1×
+  const cap = [1.5, 1, 1, .75][perfLevel];
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, inMenu ? Math.min(cap, 1) : cap));
   renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
   if (composer) { composer.setPixelRatio(renderer.getPixelRatio()); composer.setSize(w, h); }
 }
 function applyQuality() {
-  if (hq) setupPost();
+  if (perfLevel < 2) setupPost();
   else if (composer) { composer.renderTarget1.dispose(); composer.renderTarget2.dispose(); composer = null; }
   resize();
 }
@@ -590,11 +595,14 @@ function makeEnv(sc, o = {}) {
   sc.add(new THREE.HemisphereLight('#b4bcff', '#1c1210', 0.35));
   const spot = new THREE.SpotLight('#fff1dc', 1.9, 12, 0.75, 0.6, 1.1);
   spot.position.set(0, o.lightH || 3.3, 0.5); spot.castShadow = true;
-  const sm = hq ? 2048 : 1024; spot.shadow.mapSize.set(sm, sm); spot.shadow.bias = -0.0004; spot.shadow.radius = 3; spot.shadow.camera.near = 1; spot.shadow.camera.far = 7;
+  const sm = perfLevel === 0 ? 1024 : 512; spot.shadow.mapSize.set(sm, sm); spot.shadow.bias = -0.0004; spot.shadow.radius = 3; spot.shadow.camera.near = 1; spot.shadow.camera.far = 7;
   spot.target.position.set(0, 0, 0); sc.add(spot, spot.target);
   const fill = new THREE.DirectionalLight('#9fb0ff', 0.3); fill.position.set(-2, 3, -2); sc.add(fill);
-  const p0 = new THREE.PointLight(COLS[0], 0.9, 7); p0.position.set(0, 0.5, 3.2); sc.add(p0);
-  const p1 = new THREE.PointLight(COLS[1], 0.9, 7); p1.position.set(0, 0.5, -3.2); sc.add(p1);
+  if (perfLevel < 2) {   // coloured rim lights: pretty, but two more lights in every shader
+    const p0 = new THREE.PointLight(COLS[0], 0.9, 7); p0.position.set(0, 0.5, 3.2); sc.add(p0);
+    const p1 = new THREE.PointLight(COLS[1], 0.9, 7); p1.position.set(0, 0.5, -3.2); sc.add(p1);
+  }
+  renderer.shadowMap.enabled = perfLevel < 3; spot.castShadow = perfLevel < 3;
   const floor = new THREE.Mesh(new THREE.PlaneGeometry(40, 40), mat('#121117', .95, 0, { envMapIntensity: .3 }));
   floor.rotation.x = -Math.PI / 2; floor.position.y = -0.78; floor.receiveShadow = true; sc.add(floor);
   const rug = new THREE.Mesh(new THREE.CircleGeometry(2.6, 64), mat('#ffffff', 1, 0, { map: rugTex, transparent: true, envMapIntensity: .2 }));
@@ -617,6 +625,10 @@ canvas.addEventListener('pointerdown', e => { initAudio(); updPtr(e); ptr.presse
 canvas.addEventListener('pointerup', e => { updPtr(e); ptr.released = true; });
 canvas.addEventListener('pointercancel', () => { ptr.released = true; });
 const digitPressed = {};
+// ping-pong depth: Q/E and the mouse wheel nudge the paddle toward the net or back
+addEventListener('keydown', e => { if (e.target && e.target.tagName === 'INPUT') return; if (e.code === 'KeyQ') keys.qe = -1; if (e.code === 'KeyE') keys.qe = 1; });
+addEventListener('keyup', e => { if (e.code === 'KeyQ' || e.code === 'KeyE') keys.qe = 0; });
+canvas.addEventListener('wheel', e => { if (G && G.id === 'pong' && mode !== 'menu') { e.preventDefault(); ctl.dq = clamp(num(ctl.dq, 0) + e.deltaY * .0012, -.8, .8); } }, { passive: false });
 addEventListener('keydown', e => { if (/^Digit[1-9]$/.test(e.code) && !(e.target && e.target.tagName === 'INPUT')) digitPressed[+e.code.slice(5)] = true; });
 const KEYS = { ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right', ArrowUp: 'up', KeyW: 'up', ArrowDown: 'down', KeyS: 'down', ShiftLeft: 'fine', ShiftRight: 'fine' };
 addEventListener('keydown', e => {
@@ -853,18 +865,150 @@ function cueAim(V, o) {
 }
 
 // ======================================================================
-// GAME 1: PING-PONG
+// GAME 1: PING-PONG (bola em 3D, regras de verdade)
 // ======================================================================
 const Pong = (() => {
-  // Paddles move freely in their own half: x across the table, depth q from the net (ZMIN) to well behind the end line (ZMAX).
-  // Depth is mirrored per side, so q means "distance from the net" for both players.
-  const TL = 1.37, TW = 0.7625, PZ = 1.5, PX = 0.92, PR = 0.14, BR = 0.02, WIN = 7, PSPD = 3.4, ZMIN = 0.25, ZMAX = 1.85, OUT = ZMAX + 0.35;
-  const g = { id: 'pong', realtime: true, planeY: 0.13, fxY: 0.0, halfW: PX, cam: { h: 1.55, d: 3.45, lz: -0.15 }, ghostable: true,
-    help: 'Mova o mouse ou arraste o dedo: a raquete anda para os lados, para frente e para trás · WASD ou setas. Avance contra a bola para cortar mais forte.' };
+  // Real-size table (metres). The ball flies under gravity, bounces on the table and can hit the net; there are no walls.
+  // Each paddle moves sideways and up/down with the pointer; its depth follows the ball by itself (wheel/Q-E nudge it).
+  const TL = 1.37, TW = .7625, NETH = .1525, BR = .02, PR = .085, HIT = PR + BR + .03, GRAV = 9.8, WIN = 11;
+  const PX = 1.5, PYMIN = .03, PYMAX = .7, ZMIN = .2, ZMAX = 2.4, PSPD = 9, QSPD = 4.2;
+  const g = { id: 'pong', realtime: true, planeY: 0.13, fxY: 0.0, halfW: TW, cam: { h: 1.25, d: 3.05, lz: -0.3 }, ghostable: true,
+    help: 'Mouse ou dedo: a raquete vai para os lados e para cima/baixo (setas também) · a profundidade acompanha a bola (roda do mouse ou Q/E ajustam) · a bola tem que quicar na mesa do adversário · 11 pontos.' };
   let m = {};
   const sgn = k => k === 0 ? 1 : -1;
+  function launch(b, xt, zt, pace) {   // aim at a landing spot, lifting the arc until it clears the net
+    const dist = Math.hypot(xt - b[0], zt - b[2]);
+    let T = clamp(dist / pace, .26, 1.2);
+    for (let i = 0; i < 14; i++) {
+      const vz = (zt - b[2]) / T, vy = (BR - b[1] + .5 * GRAV * T * T) / T, t0 = -b[2] / vz, y0 = b[1] + vy * t0 - .5 * GRAV * t0 * t0;
+      if (t0 <= 0 || t0 >= T || y0 > NETH + BR + .04) break;
+      T *= 1.1;
+    }
+    b[3] = (xt - b[0]) / T; b[5] = (zt - b[2]) / T; b[4] = (BR - b[1] + .5 * GRAV * T * T) / T;
+  }
+  function serve(S) {
+    const k = S.srv, d = sgn(k), p = S.p[k];
+    S.b = [clamp(p[0], -TW + .1, TW - .1), Math.max(p[1], .22), d * Math.min(p[2], TL + .25), 0, 0, 0];
+    launch(S.b, rnd(-.45, .45), -d * TL * rnd(.45, .75), 5.2);
+    S.last = k; S.bnc = 0; S.sp = 5; S.ph = 'play'; S.why = ''; ev(S, 'serve', S.b[0], S.b[2], 1, k);
+  }
+  g.init = () => { const srv = Math.random() < .5 ? 0 : 1; return { b: [0, .3, 0, 0, 0, 0], p: [[0, .2, 1.6], [0, .2, 1.6]], pv: [0, 0], sc: [0, 0], ph: 'count', tm: 2.4, srv, first: srv, last: srv, bnc: 0, sp: 5, why: '', mid: rid() }; };
+  function point(S, w, why) {
+    S.sc[w]++; S.why = why; S.ph = 'point'; S.tm = 1.1; S.pw = w;
+    ev(S, 'goal', clamp(S.b[0], -TW, TW), clamp(S.b[2], -TL, TL), 1, w);
+  }
+  function nextServe(S) {
+    const tot = S.sc[0] + S.sc[1], deuce = S.sc[0] >= 10 && S.sc[1] >= 10;
+    S.srv = (S.first + (deuce ? tot : Math.floor(tot / 2))) % 2;   // two serves each, one each at 10–10
+  }
+  function hitBy(S, k) {
+    const d = sgn(k), b = S.b, p = S.p[k];
+    const offX = clamp((b[0] - p[0]) / PR, -1, 1), offY = clamp((b[1] - p[1]) / PR, -1, 1);
+    const smash = clamp(S.pv[k] * .55, 0, 3);   // paddle moving toward the net adds pace
+    S.sp = clamp(S.sp * 1.05 + smash * .6, 4.5, 11);
+    // where it goes: the blade's edge sends it wide (it can go out), the top of the blade keeps it short
+    const xt = b[0] * .25 + offX * TW * 1.15, zt = -d * TL * (.35 + .5 * (.5 - .5 * offY));
+    launch(b, xt, zt, S.sp + smash);
+    S.last = k; S.bnc = 0; ev(S, 'hit', b[0], b[2], clamp(.6 + smash / 3, 0, 1), k);
+  }
+  g.step = (S, dt, i0, i1) => {
+    [i0, i1].forEach((inp, k) => {
+      const p = S.p[k], tx = clamp(num(inp && inp.x, p[0]), -PX, PX), ty = clamp(num(inp && inp.y, p[1]), PYMIN, PYMAX), tq = clamp(num(inp && inp.q, p[2]), ZMIN, ZMAX);
+      let dx = tx - p[0], dy = ty - p[1]; const dd = Math.hypot(dx, dy), mx = PSPD * dt; if (dd > mx) { dx *= mx / dd; dy *= mx / dd; }
+      const dq = clamp(tq - p[2], -QSPD * dt, QSPD * dt);
+      p[0] += dx; p[1] += dy; p[2] += dq; S.pv[k] = -dq / Math.max(dt, 1e-3);
+      p._q0 = p[2] - dq;
+    });
+    if (S.ph === 'count') { S.tm -= dt; if (S.tm <= 0) serve(S); return; }
+    if (S.ph === 'point') { S.tm -= dt; if (S.tm <= 0) { const [a, b2] = S.sc; if (Math.max(a, b2) >= WIN && Math.abs(a - b2) >= 2) S.ph = 'over'; else { nextServe(S); S.ph = 'count'; S.tm = 1.4; } } return; }
+    if (S.ph !== 'play') return;
+    const n = Math.max(1, Math.ceil(dt / .002)), h = dt / n, b = S.b;
+    for (let i = 0; i < n; i++) {
+      const pz = b[2];
+      b[4] -= GRAV * h; b[0] += b[3] * h; b[1] += b[4] * h; b[2] += b[5] * h;
+      // net
+      if (Math.sign(pz) !== Math.sign(b[2]) && pz !== 0 && Math.abs(b[0]) < TW + .15 && b[1] < NETH + BR) {
+        b[2] = Math.sign(pz) * .012; b[5] *= -.12; b[3] *= .3; S.net = true; ev(S, 'wall', b[0], 0, .5);
+      }
+      // table bounce: must land on the other side, exactly once
+      if (b[1] <= BR && b[4] < 0 && Math.abs(b[0]) <= TW && Math.abs(b[2]) <= TL) {
+        b[1] = BR; b[4] = -b[4] * .88; b[3] *= .98; b[5] *= .98;
+        const side = b[2] > 0 ? 0 : 1;
+        ev(S, 'table', b[0], b[2], .8);
+        if (side === S.last) return point(S, 1 - S.last, S.net ? 'rede' : 'próprio lado');
+        if (++S.bnc >= 2) return point(S, S.last, 'dois quiques');
+        S.net = false;
+      }
+      // the receiver's paddle, once the ball has bounced on their side
+      const k = 1 - S.last, d = sgn(k), p = S.p[k];
+      if (S.bnc === 1 && b[5] * d > 0) {
+        const qa = p._q0 + (p[2] - p._q0) * i / n, qb = p._q0 + (p[2] - p._q0) * (i + 1) / n;
+        if (pz * d < qa && b[2] * d >= qb && Math.abs(b[0] - p[0]) <= HIT && Math.abs(b[1] - p[1]) <= HIT) { b[2] = d * qb; hitBy(S, k); continue; }
+      }
+      // dead ball: fell off or flew away
+      if (b[1] < -.6 || Math.abs(b[2]) > 3.6 || Math.abs(b[0]) > 2.6) return point(S, S.bnc >= 1 ? S.last : 1 - S.last, S.bnc >= 1 ? 'não devolveu' : 'fora');
+    }
+  };
+  // where (and how high) the ball will be when it crosses depth q on side k after its bounce there
+  function predict(S, k, q) {
+    const b = S.b.slice(), d = sgn(k); let bnc = S.bnc, last = S.last, apex = null;
+    for (let t = 0; t < 2.2; t += .01) {
+      const pz = b[2];
+      b[4] -= GRAV * .01; b[0] += b[3] * .01; b[1] += b[4] * .01; b[2] += b[5] * .01;
+      if (b[1] <= BR && b[4] < 0 && Math.abs(b[0]) <= TW && Math.abs(b[2]) <= TL) { b[1] = BR; b[4] = -b[4] * .88; if ((b[2] > 0 ? 0 : 1) === k) bnc++; else return null; }
+      if (last !== k && bnc === 1) {
+        if (!apex && b[4] <= 0) apex = { x: b[0], y: b[1], q: Math.abs(b[2]) };
+        if (q != null && pz * d < q && b[2] * d >= q) return { x: b[0], y: b[1], q, apex };
+      }
+      if (b[1] < -.5) break;
+    }
+    return apex;
+  }
+  const autoDepth = (S, k) => {
+    if (S.ph !== 'play' || S.last === k) return 1.6;
+    const a = predict(S, k, null);
+    return a ? clamp(a.q + .12, ZMIN + .1, ZMAX) : 1.6;
+  };
+  g.cpu = (S, side, dt, mem) => {
+    const p = S.p[side], q = autoDepth(S, side);
+    let tx = 0, ty = .25;
+    if (S.ph === 'play' && S.last !== side) {
+      const hit = predict(S, side, p[2]);
+      if (hit) { tx = hit.x; ty = hit.y; }
+      if (mem.lastSeen !== S.last) { mem.lastSeen = S.last; const e = DIFF([.14, .095, .06]) * (.4 + S.sp / 4); mem.ex = rnd(-e, e); mem.ey = rnd(-e, e); }   // faster rallies, shakier returns
+      // a slightly off-centre contact steers the return; the CPU keeps it on the table
+      tx += num(mem.ex, 0); ty += num(mem.ey, 0);
+    } else if (S.ph === 'count' && S.srv === side) { tx = rnd(-.1, .1); ty = .25; }
+    const v = DIFF([3.2, 4.6, 7]);
+    mem.x = num(mem.x, p[0]); mem.y = num(mem.y, p[1]);
+    mem.x += clamp(tx - mem.x, -v * dt, v * dt); mem.y += clamp(ty - mem.y, -v * dt, v * dt);
+    return { x: r3(mem.x), y: r3(mem.y), q: r3(q) };
+  };
+  const vplane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0), vhit = new THREE.Vector3();
+  g.local = (V, side, dt) => {
+    const d = sgn(side), q0 = num(ctl.pq, V.p[side][2]);
+    ctl.dq = clamp(num(ctl.dq, 0) + ((keys.qe || 0) * 1.2 * dt), -.8, .8);
+    const qt = clamp(autoDepth(V, side) + ctl.dq, ZMIN, ZMAX);
+    // pointer → a vertical plane at the paddle's depth: screen left/right and up/down move the blade
+    if (ptr.valid) {
+      ray.setFromCamera(ndc, camera); vplane.constant = -d * q0;
+      if (ray.ray.intersectPlane(vplane, vhit)) { ctl.x = vhit.x; ctl.y = vhit.y; }
+    }
+    const kx = ((keys.right ? 1 : 0) - (keys.left ? 1 : 0)) * d, ky = (keys.up ? 1 : 0) - (keys.down ? 1 : 0);
+    if (kx) ctl.x = num(ctl.x, 0) + kx * 2.6 * dt;
+    if (ky) ctl.y = num(ctl.y, .2) + ky * 1.6 * dt;
+    ctl.x = clamp(num(ctl.x, 0), -PX, PX); ctl.y = clamp(num(ctl.y, .2), PYMIN, PYMAX);
+    // guest-side prediction, same speed caps as the host
+    ctl.px = num(ctl.px, ctl.x); ctl.py = num(ctl.py, ctl.y); ctl.pq = num(ctl.pq, qt);
+    let dx = ctl.x - ctl.px, dy = ctl.y - ctl.py; const dd = Math.hypot(dx, dy), mx = PSPD * dt; if (dd > mx) { dx *= mx / dd; dy *= mx / dd; }
+    ctl.px += dx; ctl.py += dy; ctl.pq += clamp(qt - ctl.pq, -QSPD * dt, QSPD * dt);
+    return { x: r3(ctl.x), y: r3(ctl.y), q: r3(qt) };
+  };
+  g.pack = S => ({ b: S.b.map(r3), p: S.p.map(a => a.slice(0, 3).map(r3)), sc: S.sc, ph: S.ph, tm: r3(S.tm), srv: S.srv, last: S.last, bnc: S.bnc, why: S.why, pw: S.pw, mid: S.mid });
+  g.unpack = d => ({ b: A(d.b, 6), p: [A(d.p && d.p[0], 3), A(d.p && d.p[1], 3)], pv: [0, 0], sc: A(d.sc, 2), ph: ['count', 'play', 'point', 'over'].includes(d.ph) ? d.ph : 'count', tm: num(d.tm, 0),
+    srv: d.srv === 1 ? 1 : 0, last: d.last === 1 ? 1 : 0, bnc: sanInt(d.bnc, 0, 2, 0), why: String(d.why || '').slice(0, 20), pw: d.pw === 1 ? 1 : 0, mid: d.mid });
   g.build = sc => {
-    m = { sx: [0, 0], sq: [PZ, PZ], prev: [0, 0] };
+    m = { sm: [[0, .2, 1.6], [0, .2, 1.6]], prev: [0, 0], hist: [] };
     const blue = mat('#1b4a86', .6, 0, { envMapIntensity: .6 }), white = mat('#f3f5fb', .5), dark = mat('#15161c', .6), metal = mat('#a3abbd', .3, .8);
     sc.add(box(2 * TW, 0.04, 2 * TL, blue, 0, -0.02, 0));
     const L = (w, d, x, z) => sc.add(box(w, 0.002, d, white, x, 0.001, z, false));
@@ -877,129 +1021,58 @@ const Pong = (() => {
       for (let y = 0; y < h; y += 4) { c.beginPath(); c.moveTo(0, y); c.lineTo(w, y); c.stroke(); }
       c.fillStyle = '#f3f5fb'; c.fillRect(0, 0, w, 3);
     });
-    const net = new THREE.Mesh(new THREE.PlaneGeometry(2 * TW + 0.3, 0.1525), new THREE.MeshBasicMaterial({ map: netTex, transparent: true, side: THREE.DoubleSide, depthWrite: false }));
-    net.position.set(0, 0.076, 0); sc.add(net);
-    for (const sx of [-1, 1]) { const p = cyl(0.01, 0.01, 0.17, metal); p.position.set(sx * (TW + 0.15), 0.085, 0); sc.add(p); }
-    const glass = new THREE.MeshStandardMaterial({ color: '#9fc7ff', transparent: true, opacity: .1, roughness: .1, emissive: '#2a4f8a', emissiveIntensity: .4, depthWrite: false });
-    for (const sx of [-1, 1]) sc.add(box(0.008, 0.07, 2 * OUT, glass, sx * (PX + 0.04), 0.035, 0, false));
+    const net = new THREE.Mesh(new THREE.PlaneGeometry(2 * TW + 0.3, NETH), new THREE.MeshBasicMaterial({ map: netTex, transparent: true, side: THREE.DoubleSide, depthWrite: false }));
+    net.position.set(0, NETH / 2, 0); sc.add(net);
+    for (const sx of [-1, 1]) { const p = cyl(0.01, 0.01, NETH + .02, metal); p.position.set(sx * (TW + 0.15), (NETH + .02) / 2, 0); sc.add(p); }
     m.pad = [0, 1].map(s => {
       const gr = new THREE.Group();
-      const blade = cyl(0.12, 0.12, 0.014, mat(s ? '#c8203a' : '#1d4fc7', .75), 48); blade.rotation.x = Math.PI / 2;
-      const rim = new THREE.Mesh(new THREE.TorusGeometry(0.12, 0.006, 8, 48), mat(COLS[s], .3, 0, { emissive: COLS[s], emissiveIntensity: 1.4 }));
-      const handle = box(0.03, 0.11, 0.024, mat('#c9955a', .55), 0, -0.165, 0);
-      gr.add(blade, rim, handle); gr.position.set(0, 0.13, sgn(s) * PZ); sc.add(gr); return gr;
+      const blade = cyl(PR * .9, PR * .9, 0.012, mat(s ? '#c8203a' : '#1d4fc7', .75), 48); blade.rotation.x = Math.PI / 2;
+      const rim = new THREE.Mesh(new THREE.TorusGeometry(PR * .9, 0.005, 8, 48), mat(COLS[s], .3, 0, { emissive: COLS[s], emissiveIntensity: 1.4 }));
+      const handle = box(0.026, 0.1, 0.022, mat('#c9955a', .55), 0, -PR * .9 - .045, 0);
+      gr.add(blade, rim, handle); sc.add(gr); return gr;
     });
     m.ball = new THREE.Mesh(new THREE.SphereGeometry(BR, 24, 16), mat('#ffb347', .35, 0, { emissive: '#ff8a00', emissiveIntensity: .3 }));
     m.ball.castShadow = true; sc.add(m.ball);
-    m.hist = [];
+    // a soft dark spot on the table under the ball makes its height readable
+    const spotTex = canvasTex(64, 64, (c, w) => { const gr = c.createRadialGradient(32, 32, 0, 32, 32, 32); gr.addColorStop(0, 'rgba(0,0,0,.7)'); gr.addColorStop(1, 'rgba(0,0,0,0)'); c.fillStyle = gr; c.fillRect(0, 0, w, w); }, true);
+    m.spot = new THREE.Mesh(new THREE.PlaneGeometry(.09, .09), new THREE.MeshBasicMaterial({ map: spotTex, transparent: true, depthWrite: false }));
+    m.spot.rotation.x = -Math.PI / 2; m.spot.position.y = .002; sc.add(m.spot);
     m.trail = [...Array(10)].map((_, i) => {
       const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: '#ffa640', transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, opacity: .5 * (1 - i / 10) }));
       const k = 0.07 * (1 - i / 14); s.scale.set(k, k, k); s.visible = false; sc.add(s); return s;
     });
   };
-  g.init = () => ({ b: [0, 0, 0, 0], o: 0, p: [0, 0], q: [PZ, PZ], sc: [0, 0], ph: 'count', tm: 2.6, sd: Math.random() < .5 ? 1 : -1, sp: 0, mid: rid(), _q0: [PZ, PZ], _vq: [0, 0] });
-  function hitBy(S, side, q) {
-    const d = sgn(side), off = clamp((S.b[0] - S.p[side]) / PR, -1, 1), ang = off * 0.75;
-    const smash = clamp(-S._vq[side] * 0.3, 0, 1.0);   // paddle moving toward the net adds pace
-    S.sp = Math.min(S.sp * 1.07 + smash, 5.6);
-    S.b[2] = Math.sin(ang) * S.sp; S.b[3] = -d * Math.cos(ang) * S.sp;
-    S.b[1] = d * q; S.o = S.b[1];
-    ev(S, 'hit', S.b[0], S.b[1], 1, side);
-  }
-  g.step = (S, dt, i0, i1) => {
-    [i0, i1].forEach((inp, k) => {
-      const tx = clamp(num(inp && inp.x, S.p[k]), -PX, PX), tq = clamp(num(inp && inp.z, S.q[k]), ZMIN, ZMAX);
-      let dx = tx - S.p[k], dq = tq - S.q[k];
-      const dist = Math.hypot(dx, dq), mx = PSPD * dt; if (dist > mx) { dx *= mx / dist; dq *= mx / dist; }
-      S._q0[k] = S.q[k]; S.p[k] += dx; S.q[k] += dq; S._vq[k] = dq / Math.max(dt, 1e-3);
-    });
-    if (S.ph === 'count') {
-      S.tm -= dt;
-      if (S.tm <= 0) { S.ph = 'play'; S.sp = 1.7; const a = rnd(-.35, .35); S.b = [0, 0, Math.sin(a) * S.sp, S.sd * Math.cos(a) * S.sp]; S.o = 0; ev(S, 'serve', 0, 0, 1); }
-      return;
-    }
-    if (S.ph !== 'play') return;
-    const n = Math.max(1, Math.ceil(dt / 0.003)), h = dt / n, b = S.b;
-    for (let i = 0; i < n; i++) {
-      const pz = b[1], zt = b[3] > 0 ? PZ : -PZ, f0 = (pz - S.o) / (zt - S.o);
-      b[0] += b[2] * h; b[1] += b[3] * h;
-      const f1 = (b[1] - S.o) / (zt - S.o);
-      if (f0 < 0.7 && f1 >= 0.7) ev(S, 'table', b[0], b[1], .8);
-      if (b[0] > PX) { b[0] = PX; b[2] = -Math.abs(b[2]); ev(S, 'wall', b[0], b[1], .7); }
-      else if (b[0] < -PX) { b[0] = -PX; b[2] = Math.abs(b[2]); ev(S, 'wall', b[0], b[1], .7); }
-      // hit when the ball crosses the paddle's (moving) depth plane while coming toward that side
-      for (const k of [0, 1]) {
-        const d = sgn(k); if (b[3] * d <= 0) continue;
-        const qa = S._q0[k] + (S.q[k] - S._q0[k]) * i / n, qb = S._q0[k] + (S.q[k] - S._q0[k]) * (i + 1) / n;
-        if (pz * d < qa && b[1] * d >= qb && Math.abs(b[0] - S.p[k]) <= PR + BR) { hitBy(S, k, qb); break; }
-      }
-      if (Math.abs(b[1]) > OUT) {
-        const scorer = b[1] > 0 ? 1 : 0;
-        S.sc[scorer]++; ev(S, 'goal', b[0], clamp(b[1], -PZ, PZ), 1, scorer);
-        S.b = [0, 0, 0, 0];
-        if (S.sc[scorer] >= WIN) S.ph = 'over'; else { S.ph = 'count'; S.tm = 1.8; S.sd = scorer === 1 ? 1 : -1; }
-        return;
-      }
-    }
-  };
-  g.cpu = (S, side, dt, mem) => {
-    const b = S.b, d = sgn(side), coming = S.ph === 'play' && b[3] * d > 0;
-    // aim error grows with ball speed, so long rallies eventually break the CPU
-    const sg = Math.sign(b[3]); if (sg !== mem.sg) { mem.sg = sg; const e = DIFF([.24, .14, .07]) * (0.7 + S.sp / 5); mem.err = rnd(-e, e); }
-    let t = 0;
-    if (coming) {
-      const tt = (d * S.q[side] - b[1]) / b[3]; let x = b[0] + b[2] * tt;
-      const span = 2 * PX; x += PX; x = ((x % (2 * span)) + 2 * span) % (2 * span); if (x > span) x = 2 * span - x; x -= PX;
-      t = x + (mem.err || 0);
-    }
-    const v = DIFF([1.45, 1.9, 2.5]);
-    mem.x = num(mem.x, 0); mem.x += clamp(t - mem.x, -v * dt, v * dt);
-    return { x: r3(mem.x), z: DIFF([1.6, 1.5, 1.35]) };
-  };
-  g.local = (V, side, dt) => {
-    const d = sgn(side);
-    if (ptr.fresh && ptr.valid) { ctl.x = ptr.x; ctl.q = ptr.z * d; }
-    const kx = ((keys.right ? 1 : 0) - (keys.left ? 1 : 0)) * d, kq = (keys.down ? 1 : 0) - (keys.up ? 1 : 0);
-    if (kx) ctl.x = num(ctl.x, 0) + kx * 2.4 * dt;
-    if (kq) ctl.q = num(ctl.q, PZ) + kq * 2.0 * dt;
-    ctl.x = clamp(num(ctl.x, 0), -PX, PX); ctl.q = clamp(num(ctl.q, PZ), ZMIN, ZMAX);
-    // guest-side prediction, same speed cap as the host
-    ctl.px = num(ctl.px, ctl.x); ctl.pq = num(ctl.pq, ctl.q);
-    let dx = ctl.x - ctl.px, dq = ctl.q - ctl.pq; const dist = Math.hypot(dx, dq), mx = PSPD * dt;
-    if (dist > mx) { dx *= mx / dist; dq *= mx / dist; }
-    ctl.px += dx; ctl.pq += dq;
-    return { x: r3(ctl.x), z: r3(ctl.q) };
-  };
-  g.pack = S => ({ b: S.b.map(r3), o: r3(S.o), p: S.p.map(r3), q: S.q.map(r3), sc: S.sc, ph: S.ph, tm: r3(S.tm), sd: S.sd, mid: S.mid });
-  g.unpack = d => ({ b: A(d.b, 4), o: num(d.o, 0), p: A(d.p, 2), q: A(d.q, 2, PZ), sc: A(d.sc, 2), ph: PHASE(d.ph), tm: num(d.tm, 0), sd: num(d.sd, 1), mid: d.mid });
-  function ballY(z, o, vz) {
-    const zt = vz > 0 ? PZ : -PZ, f = Math.max(0, (z - o) / (zt - o));
-    if (f < 0.7) { const u = f / 0.7; return BR + (o === 0 ? 0.16 : 0.12) * (1 - u) + 0.22 * 4 * u * (1 - u); }
-    if (f <= 1) { const u = (f - 0.7) / 0.3; return BR + 0.12 * u + 0.16 * 4 * u * (1 - u); }
-    return Math.max(BR + 0.03, BR + 0.12 - 0.1 * (f - 1));   // past the end line it drifts down slowly
-  }
   g.render = (V, dt, o) => {
     for (const k of [0, 1]) {
-      const pred = o.local && k === o.side && mode === 'guest';
-      const x = pred ? ctl.px : V.p[k], q = pred ? ctl.pq : V.q[k];
-      m.sx[k] += (x - m.sx[k]) * o.smooth; m.sq[k] += (q - m.sq[k]) * o.smooth;
-      const pad = m.pad[k], vx = (m.sx[k] - m.prev[k]) / Math.max(dt, 1e-3); m.prev[k] = m.sx[k];
-      pad.position.x = m.sx[k]; pad.position.z = sgn(k) * m.sq[k];
-      pad.rotation.z += (clamp(-vx * 0.12, -0.5, 0.5) - pad.rotation.z) * lerpK(dt, 12);
-      pad.rotation.x = (k === 0 ? -1 : 1) * 0.25;
+      const pred = o.local && k === o.side && mode === 'guest', t = pred ? [ctl.px, ctl.py, ctl.pq] : V.p[k];
+      const s = m.sm[k]; for (let j = 0; j < 3; j++) s[j] += (t[j] - s[j]) * o.smooth;
+      const pad = m.pad[k], vx = (s[0] - m.prev[k]) / Math.max(dt, 1e-3); m.prev[k] = s[0];
+      pad.position.set(s[0], s[1] + PR * .2, sgn(k) * s[2]);
+      pad.rotation.z += (clamp(-vx * 0.08, -0.5, 0.5) - pad.rotation.z) * lerpK(dt, 12);
+      pad.rotation.x = (k === 0 ? -1 : 1) * 0.2;
     }
     let pos = null;
-    if (V.ph === 'play') {
-      let x = V.b[0] + V.b[2] * o.el, z = V.b[1] + V.b[3] * o.el;
-      if (x > PX) x = 2 * PX - x; if (x < -PX) x = -2 * PX - x;
-      m.ball.position.set(x, ballY(z, V.o, V.b[3]), z); pos = { x, z };
-    }
-    m.ball.visible = V.ph === 'play' && !o.ghost;
-    if (m.ball.visible) { m.hist.unshift(m.ball.position.clone()); if (m.hist.length > 10) m.hist.length = 10; } else m.hist.length = 0;
+    const live = V.ph === 'play' || V.ph === 'point';
+    if (live) {
+      const el = V.ph === 'play' ? o.el : 0, x = V.b[0] + V.b[3] * el, z = V.b[2] + V.b[5] * el, y = Math.max(BR * .5, V.b[1] + V.b[4] * el - .5 * GRAV * el * el);
+      m.ball.position.set(x, y, z); pos = { x, z };
+      const over = Math.abs(x) <= TW && Math.abs(z) <= TL;
+      m.spot.visible = over && !o.ghost; m.spot.position.x = x; m.spot.position.z = z;
+      const sc = clamp(.6 + y * 1.5, .6, 1.6); m.spot.scale.set(sc, sc, sc); m.spot.material.opacity = clamp(1 - y * 1.6, .15, .9);
+    } else m.spot.visible = false;
+    m.ball.visible = live && !o.ghost;
+    if (m.ball.visible && V.ph === 'play') { m.hist.unshift(m.ball.position.clone()); if (m.hist.length > 10) m.hist.length = 10; } else m.hist.length = 0;
     m.trail.forEach((s, i) => { const p = m.hist[i + 1]; s.visible = !!p; if (p) s.position.copy(p); });
     return pos;
   };
-  g.hud = (V, vs, el) => ({ sc: V.sc, big: V.ph === 'count' ? String(Math.max(1, Math.ceil(V.tm - el))) : '', line: V.ph === 'count' ? 'Saque em instantes' : '' });
+  const WHY = { 'fora': 'bola fora', 'rede': 'bateu na rede', 'próprio lado': 'quicou do próprio lado', 'dois quiques': 'quicou duas vezes', 'não devolveu': 'não devolveu' };
+  g.hud = (V, vs, el) => {
+    const nm = names(vs);
+    let line = '';
+    if (V.ph === 'point') line = 'Ponto de ' + nm[V.pw] + ' · ' + (WHY[V.why] || V.why);
+    else if (V.ph === 'count') line = 'Saque de ' + nm[V.srv] + (V.sc[0] >= 10 && V.sc[1] >= 10 ? ' · vantagem: precisa abrir 2 pontos' : '');
+    return { sc: V.sc, big: V.ph === 'count' ? String(Math.max(1, Math.ceil(V.tm - el))) : '', line };
+  };
   g.winner = V => V.ph === 'over' ? (V.sc[0] > V.sc[1] ? 0 : 1) : null;
   return g;
 })();
@@ -1008,7 +1081,7 @@ const Pong = (() => {
 // GAME 2: TOTÓ (pebolim)
 // ======================================================================
 const Toto = (() => {
-  const HL = 1.15, HW = 0.62, GW = 0.2, BR = 0.03, RY = 0.11, FR = 0.036, WIN = 5, SSPD = 4.5;
+  const HL = 1.15, HW = 0.62, GW = 0.2, BR = 0.03, RY = 0.11, FR = 0.036, WIN = 5, SSPD = 8;
   const RODS = [[1.0, 0, 1], [0.714, 0, 2], [0.429, 1, 3], [0.143, 0, 3], [-0.143, 1, 3], [-0.429, 0, 3], [-0.714, 1, 2], [-1.0, 1, 1]].map(([z, t, n]) => {
     const sp = 2 * HW / n; return { z, t, n, range: n === 1 ? 0.2 : n === 2 ? 0.2 : 0.14, base: [...Array(n)].map((_, j) => -HW + sp * (j + .5)) };
   });
@@ -1599,7 +1672,11 @@ const SQ = 0.15, BY = 0.05;                     // square size, height of the bo
 const sqX = c => (c - 3.5) * SQ, sqZ = r => (3.5 - r) * SQ;   // row 0 is nearest to side 0
 const sqAt = (r, c) => r >= 0 && r < 8 && c >= 0 && c < 8 ? r * 8 + c : -1;
 const sqPos = s => [sqX(s & 7), sqZ(s >> 3)];
-const lacquer = (color, rough = .3, extra) => new THREE.MeshPhysicalMaterial(Object.assign({ color, roughness: rough, clearcoat: .85, clearcoatRoughness: .18 }, extra || {}));
+const lacquer = (color, rough = .3, extra) => {
+  if (perfLevel < 2) return new THREE.MeshPhysicalMaterial(Object.assign({ color, roughness: rough, clearcoat: .85, clearcoatRoughness: .18 }, extra || {}));
+  const o = Object.assign({ color, roughness: rough }, extra || {}); delete o.clearcoat; delete o.clearcoatRoughness;   // light graphics: no clearcoat layer
+  return new THREE.MeshStandardMaterial(o);
+};
 const shadowAll = o => { o.traverse(c => { if (c.isMesh) { c.castShadow = true; c.receiveShadow = true; } }); return o; };
 const lathe = (pts, s, seg = 40) => new THREE.LatheGeometry(pts.map(([r, y]) => new THREE.Vector2(r * s, y * s)), seg);
 const ease = u => u * u * (3 - 2 * u);
@@ -1704,7 +1781,7 @@ function boardShot(S, inp) {
   return (Array.isArray(mv) && mv[0] === S.mid && mv[1] === S.tn && S.win == null) ? [num(mv[2], -1) | 0, num(mv[3], -1) | 0] : null;
 }
 // CPU: think once per position, wait a beat so the move reads as deliberate
-function cpuPlan(S, side, dt, mem, plan, wait = 0.9) {
+function cpuPlan(S, side, dt, mem, plan, wait = 0.6) {
   if (S.turn !== side || S.win != null) return null;
   if (mem.tn !== S.tn || mem.mid !== S.mid) { mem.tn = S.tn; mem.mid = S.mid; mem.t = 0; mem.plan = plan(); }
   mem.t += dt;
@@ -2713,7 +2790,7 @@ const Oito = (() => {
   g.cpu = (S, side, dt, mem) => {
     if (S.turn !== side || S.win != null) return {};
     if (mem.tn !== S.tn || mem.mid !== S.mid) { mem.tn = S.tn; mem.mid = S.mid; mem.t = 0; }
-    mem.t += dt; if (mem.t < .9) return {};
+    mem.t += dt; if (mem.t < .6) return {};
     const h = S.hands[side], opts = h.filter(id => playable(S, id));
     if (!opts.length) return { act: [S.mid, S.tn, S.drew ? 'pass' : 'draw'] };
     const suitCount = s => h.filter(id => cSuit(id) === s && cRank(id) !== 7).length;
@@ -2866,7 +2943,7 @@ const Truco = (() => {
     if (S.win != null || S.ph !== 'play') return {};
     const actor = S.pend ? S.pend.to : S.turn; if (actor !== side) return {};
     if (mem.tn !== S.tn || mem.mid !== S.mid) { mem.tn = S.tn; mem.mid = S.mid; mem.t = 0; mem.r = Math.random(); }
-    mem.t += dt; if (mem.t < 1.0) return {};
+    mem.t += dt; if (mem.t < .7) return {};
     const h = S.hands[side], pw = id => power(id, S.vira), sorted = h.slice().sort((a, b) => pw(a) - pw(b)), best = sorted.map(pw).reverse();
     const my = team(side), won = S.rounds.filter(r => r === my).length, lost = S.rounds.filter(r => r === 1 - my).length;
     // strongest card already on the table and whose it is
@@ -3140,7 +3217,7 @@ const Poker = (() => {
   g.cpu = (S, side, dt, mem) => {
     if (S.win != null || S.ph !== 'bet' || S.turn !== side) return {};
     if (mem.tn !== S.tn || mem.mid !== S.mid) { mem.tn = S.tn; mem.mid = S.mid; mem.t = 0; mem.dec = null; }
-    mem.t += dt; if (mem.t < 1.0) return {};
+    mem.t += dt; if (mem.t < .7) return {};
     if (!mem.dec) mem.dec = decide(S, side);
     return { act: [S.mid, S.tn].concat(mem.dec) };
   };
@@ -3685,7 +3762,7 @@ const Vinte1 = (() => {
     if (mem.tn !== S.tn || mem.mid !== S.mid) { mem.tn = S.tn; mem.mid = S.mid; mem.t = 0; }
     mem.t += dt;
     if (S.ph === 'bet' && !S.ready[side] && mem.t > .6 + side * .25) return { bet: [S.mid, S.round, clamp(Math.round(S.chips[side] * DIFF([.04, .05, .06]) / 10) * 10, 10, Math.min(200, S.chips[side]))] };
-    if (S.ph !== 'play' || !S.cur || S.cur.s !== side || mem.t < .9) return {};
+    if (S.ph !== 'play' || !S.cur || S.cur.s !== side || mem.t < .6) return {};
     const h = S.hands[side][S.cur.h], { t, soft } = total(h.c), up = cval(S.dealer[0]), two = h.c.length === 2, money = S.chips[side] >= h.bet;
     let kind = 'stand';
     if (two && S.hands[side].length === 1 && cval(h.c[0]) === cval(h.c[1]) && money && (cRank(h.c[0]) === 0 || cval(h.c[0]) === 8)) kind = 'split';
@@ -3792,7 +3869,7 @@ const Vinte1 = (() => {
 // GAME 13: AIR HOCKEY (2 jogadores, tempo real)
 // ======================================================================
 const AirHockey = (() => {
-  const HL = 1.0, HW = .55, GW = .17, PR = .038, MR = .062, WIN = 7, MSPD = 4.6, MAXV = 6.2, TOP = .06;
+  const HL = 1.0, HW = .55, GW = .17, PR = .038, MR = .062, WIN = 7, MSPD = 8, MAXV = 6.2, TOP = .06;
   const g = { id: 'airhockey', realtime: true, planeY: TOP, fxY: TOP, halfW: HW, cam: { h: 1.55, d: 1.45, lz: .05 },
     help: 'Mova o mouse ou arraste o dedo: o taco segue na sua metade · bata no disco com velocidade para chutar forte · 7 gols vencem.' };
   let m = {};
@@ -4845,7 +4922,7 @@ const Sueca = (() => {
   g.cpu = (S, side, dt, mem) => {
     if (S.win != null || S.ph !== 'play' || S.turn !== side) return {};
     if (mem.tn !== S.tn || mem.mid !== S.mid) { mem.tn = S.tn; mem.mid = S.mid; mem.t = 0; }
-    mem.t += dt; if (mem.t < .9) return {};
+    mem.t += dt; if (mem.t < .6) return {};
     const opts = legal(S, side), byStr = a => a.slice().sort((x, y) => (cSuit(x) === S.trump) - (cSuit(y) === S.trump) || str(x) - str(y));
     let id;
     if (diff === 0) id = opts[Math.floor(Math.random() * opts.length)];
@@ -5006,7 +5083,7 @@ const Naval = (() => {
     if (S.ph === 'place') return S.ready[side] ? {} : { ready: [S.mid] };
     if (S.turn !== side) return {};
     if (mem.tn !== S.tn || mem.mid !== S.mid) { mem.tn = S.tn; mem.mid = S.mid; mem.t = 0; mem.shot = null; }
-    mem.t += dt; if (mem.t < .9) return {};
+    mem.t += dt; if (mem.t < .6) return {};
     if (!mem.shot) mem.shot = cpuShot(S, side);
     return { shot: [S.mid, S.tn, mem.shot[0], mem.shot[1]] };
   };
@@ -5144,7 +5221,7 @@ function buildGame(id) {
   fxList.length = 0; burstList.length = 0; shake = 0; paused = false;
   scene = new THREE.Scene(); makeEnv(scene);
   G = GAMES[id]; G.build(scene);
-  ctl = {}; overMid = null;
+  ctl = {}; overMid = null; perf.t = 0; perf.n = 0; perf.warm = 1.5; inMenu = mode === 'menu'; resize();
   $('btnGhost').hidden = !G.ghostable;
   $('btnPause').hidden = mode !== 'cpu'; $('btnPause').setAttribute('aria-pressed', 'false');
   $('help').textContent = G.help + (mode === 'cpu' ? ' · Esc pausa.' : '');
@@ -5624,7 +5701,7 @@ $('btnPause').onclick = () => togglePause();
 $('acts').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { initAudio(); ctl.act = b.dataset.act; } });
 function syncHq() { const b = $('btnHq'); b.setAttribute('aria-pressed', String(hq)); b.textContent = 'Gráficos: ' + (hq ? 'alto' : 'leve'); }
 $('btnHq').onclick = () => {
-  hq = !hq; try { localStorage.setItem('arena.hq', hq ? '1' : '0'); } catch {}
+  hq = !hq; perfLevel = hq ? 1 : 2; try { localStorage.setItem('arena.hq', hq ? '1' : '0'); } catch {}
   applyQuality(); syncHq();
   const keep = { S, V, paused, ctl }; buildGame(G.id); S = keep.S; V = keep.V; paused = keep.paused;   // rebuild for the new shadow-map size, keep the match
   $('btnPause').setAttribute('aria-pressed', String(paused));
@@ -5638,8 +5715,23 @@ syncGhost(); syncHq(); syncDiff();
 
 // ================= main loop =================
 let last = performance.now();
+const perf = { t: 0, n: 0, warm: 3 };
+function tunePerf(raw) {   // average frame time over ~2 s; below 45 fps, step the quality down once per window
+  if (document.hidden || paused) return;
+  if (perf.warm > 0) { perf.warm -= raw; return; }
+  perf.t += raw; perf.n++;
+  if (perf.t < 1.2) return;
+  const avg = perf.t / perf.n; perf.t = 0; perf.n = 0;
+  if (avg > 1 / 40 && perfLevel < 3) {
+    perfLevel++; hq = perfLevel < 2; applyQuality(); syncHq();
+    // materials, lights and shadows only change from level 2 on: rebuild the scene then, keeping the match
+    if (perfLevel >= 2) { const keep = { S, V, ctl, paused }; buildGame(G.id); S = keep.S; V = keep.V; ctl = keep.ctl; paused = keep.paused; }
+    if (mode !== 'menu') toast('Gráficos ajustados para manter o jogo fluido');
+  }
+}
 function frame(now) {
-  const dt = Math.min(0.05, (now - last) / 1000); last = now; dtG = dt;
+  const raw = (now - last) / 1000, dt = Math.min(0.05, raw); last = now; dtG = dt;
+  tunePerf(Math.min(raw, .25));
   let view = null, el = 0, local = false, side = null;
   if (G) {
     if (mode === 'menu') {
