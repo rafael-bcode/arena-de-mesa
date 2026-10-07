@@ -634,12 +634,14 @@ function updPtr(e) {
   if (ray.ray.intersectPlane(plane, hitP)) { ptr.x = hitP.x; ptr.z = hitP.z; ptr.valid = true; ptr.fresh = true; }
 }
 canvas.addEventListener('pointermove', updPtr);
-canvas.addEventListener('pointerdown', e => { initAudio(); updPtr(e); ptr.pressed = true; ptr.kbd = false; try { canvas.setPointerCapture(e.pointerId); } catch {} });
+let rotPressed = false;   // Batalha naval: R or a right click turns the ship being placed
+canvas.addEventListener('contextmenu', e => { if (G && G.id === 'naval' && mode !== 'menu') e.preventDefault(); });
+canvas.addEventListener('pointerdown', e => { if (e.button === 2 && G && G.id === 'naval') { updPtr(e); rotPressed = true; return; } initAudio(); updPtr(e); ptr.pressed = true; ptr.kbd = false; try { canvas.setPointerCapture(e.pointerId); } catch {} });
 canvas.addEventListener('pointerup', e => { updPtr(e); ptr.released = true; });
 canvas.addEventListener('pointercancel', () => { ptr.released = true; });
 const digitPressed = {};
 // ping-pong depth: Q/E and the mouse wheel nudge the paddle toward the net or back
-addEventListener('keydown', e => { if (e.target && e.target.tagName === 'INPUT') return; if (e.code === 'KeyQ') keys.qe = -1; if (e.code === 'KeyE') keys.qe = 1; });
+addEventListener('keydown', e => { if (e.target && e.target.tagName === 'INPUT') return; if (e.code === 'KeyQ') keys.qe = -1; if (e.code === 'KeyE') keys.qe = 1; if (e.code === 'KeyR' && !e.repeat && G && G.id === 'naval') rotPressed = true; });
 addEventListener('keyup', e => { if (e.code === 'KeyQ' || e.code === 'KeyE') keys.qe = 0; });
 canvas.addEventListener('wheel', e => { if (G && G.id === 'pong' && mode !== 'menu') { e.preventDefault(); ctl.q = clamp(num(ctl.q, 1.6) + e.deltaY * .0012, .2, 2.1); } }, { passive: false });
 addEventListener('keydown', e => { if (/^Digit[1-9]$/.test(e.code) && !(e.target && e.target.tagName === 'INPUT')) digitPressed[+e.code.slice(5)] = true; });
@@ -5018,7 +5020,7 @@ const Sueca = (() => {
 const Naval = (() => {
   const N = 10, C = .05, FLEET = [5, 4, 3, 3, 2], SHIP_NAME = { 5: 'porta-aviões', 4: 'encouraçado', 3: 'cruzador', 2: 'destróier' }, BZ = .29;
   const g = { id: 'naval', multi: true, seats: [2], realtime: false, planeY: TY, fxY: TY, halfW: .6, cam: { h: 1.42, d: 1.02, lz: .04 },
-    help: 'Embaralhe sua frota e aperte Pronto · depois toque no mar do adversário para atirar · acertou, atira de novo · afunde os 5 navios primeiro.' };
+    help: 'Monte sua frota: clique num navio e solte onde quiser (ou arraste) · R ou clique direito gira · ou embaralhe · aperte Pronto · depois toque no mar do adversário para atirar · acertou, atira de novo.' };
   let m = {};
   const cellsOf = sh => range(sh.len).map(i => sh.dir ? [sh.x, sh.y + i] : [sh.x + i, sh.y]);
   function randomFleet() {   // ships never touch, not even at the corners
@@ -5038,6 +5040,19 @@ const Naval = (() => {
       if (ok) return fleet;
     }
   }
+  // inside the sea and not touching any other ship, not even at the corners
+  function fits(fl, i, sh) {
+    const cs = cellsOf(sh);
+    if (cs.some(([x, y]) => x < 0 || y < 0 || x >= N || y >= N)) return false;
+    return fl.every((o, j) => j === i || cellsOf(o).every(([ox, oy]) => cs.every(([x, y]) => Math.abs(x - ox) > 1 || Math.abs(y - oy) > 1)));
+  }
+  // a fleet arranged by a player: the right ships, all legally placed (anything else keeps the random one)
+  function cleanFleet(f) {
+    if (!Array.isArray(f) || f.length !== FLEET.length) return null;
+    const fl = f.map(sh => ({ x: num(sh && sh.x, -1) | 0, y: num(sh && sh.y, -1) | 0, len: num(sh && sh.len, 0) | 0, dir: sh && sh.dir ? 1 : 0 }));
+    if (fl.map(sh => sh.len).sort().join() !== FLEET.slice().sort().join()) return null;
+    return fl.every((sh, i) => fits(fl, i, sh)) ? fl : null;
+  }
   const shipAt = (fleet, x, y) => fleet.findIndex(sh => cellsOf(sh).some(([cx, cy]) => cx === x && cy === y));
   const sunk = (S, k, i) => cellsOf(S.fleet[k][i]).every(([x, y]) => S.shots[k][y * N + x] === 2);
   const afloat = (S, k) => S.fleet[k].filter((_, i) => !sunk(S, k, i)).length;
@@ -5049,8 +5064,7 @@ const Naval = (() => {
     if (S.ph === 'place') {
       for (const k of [0, 1]) {
         const i = ins[k]; if (!i || S.ready[k]) continue;
-        if (Array.isArray(i.shuffle) && i.shuffle[0] === S.mid && i.shuffle[1] > S.shuf[k]) { S.shuf[k] = i.shuffle[1]; S.fleet[k] = randomFleet(); S.tn++; }
-        if (Array.isArray(i.ready) && i.ready[0] === S.mid) { S.ready[k] = true; S.tn++; }
+        if (Array.isArray(i.ready) && i.ready[0] === S.mid) { const f = cleanFleet(i.ready[1]); if (f) S.fleet[k] = f; S.ready[k] = true; S.tn++; }
       }
       if (S.ready[0] && S.ready[1]) { S.ph = 'fire'; S.tm = 0; S.tn++; }
       return;
@@ -5109,10 +5123,11 @@ const Naval = (() => {
     const act = ctl.act; ctl.act = null;
     if (V.win != null) return {};
     if (V.ph === 'place') {
-      if (act === 'shuffle') { ctl.shuf = (ctl.shuf || V.shuf[side]) + 1; }
-      if (act === 'ready') ctl.ready = V.mid;
-      return { shuffle: [V.mid, ctl.shuf || 0], ready: ctl.ready === V.mid ? [V.mid] : null };
+      if (ctl.flMid !== V.mid) { ctl.flMid = V.mid; ctl.fl = V.fleet[side].map(sh => ({ x: sh.x, y: sh.y, len: sh.len, dir: sh.dir })); ctl.hold = null; }
+      if (ctl.ready !== V.mid && !V.ready[side]) arrange(side, act);
+      return { ready: ctl.ready === V.mid ? [V.mid, ctl.fl] : null };
     }
+    canvas.style.cursor = '';
     if (V.turn !== side) return ctl.out;
     if (ptr.pressed && !ptr.kbd) {
       const c = pickCell(1 - side);
@@ -5121,7 +5136,33 @@ const Naval = (() => {
     }
     return ctl.out;
   };
-  g.actions = (V, vs) => vs == null || V.win != null || V.ph !== 'place' || V.ready[vs] || ctl.ready === V.mid ? [] : [{ id: 'shuffle', label: 'Embaralhar navios', ghost: true }, { id: 'ready', label: 'Pronto!', pink: true }];
+  // the held ship: anchored so the grabbed cell stays under the pointer, kept inside the sea
+  function holdAt(H, c) {
+    const along = H.dir ? c[1] : c[0], a = clamp(along - Math.min(H.g, H.len - 1), 0, N - H.len);
+    if (H.dir) { H.x = c[0]; H.y = a; } else { H.x = a; H.y = c[1]; }
+    H.ok = fits(ctl.fl, H.i, H);
+  }
+  function drop(H) {
+    if (!H.ok) { toast('Os navios não podem encostar um no outro.'); return false; }
+    ctl.fl[H.i] = { x: H.x, y: H.y, len: H.len, dir: H.dir }; ctl.hold = null; tone(520, .05, { vol: .06 }); return true;
+  }
+  function arrange(side, act) {
+    let H = ctl.hold;
+    const c = pickCell(side);
+    if (act === 'shuffle') { ctl.fl = randomFleet(); ctl.hold = H = null; }
+    if (H && (act === 'rotate' || rotPressed)) { H.dir ^= 1; holdAt(H, c || [H.x, H.y]); if (c) H.at = ''; }
+    if (H && c && c.join() !== H.at) { holdAt(H, c); if (H.at) H.moved = true; H.at = c.join(); }
+    if (ptr.pressed && !ptr.kbd && c) {
+      if (!H) {
+        const i = shipAt(ctl.fl, c[0], c[1]);
+        if (i >= 0) { const sh = ctl.fl[i]; ctl.hold = H = { i, len: sh.len, dir: sh.dir, x: sh.x, y: sh.y, g: sh.dir ? c[1] - sh.y : c[0] - sh.x, at: c.join(), moved: false, ok: true }; tone(700, .04, { vol: .05 }); }
+      } else if (!drop(H)) H.moved = false;
+    } else if (ptr.released && H && H.moved) drop(H);   // dragged and let go
+    if (act === 'ready') { if (ctl.hold) ctl.hold = null; ctl.ready = ctl.flMid; }   // a ship still in hand goes back where it was
+    canvas.style.cursor = ctl.hold ? 'grabbing' : c && shipAt(ctl.fl, c[0], c[1]) >= 0 ? 'grab' : '';
+  }
+  g.actions = (V, vs) => vs == null || V.win != null || V.ph !== 'place' || V.ready[vs] || ctl.ready === V.mid ? [] :
+    [ctl.hold ? { id: 'rotate', label: 'Girar navio', ghost: true } : { id: 'shuffle', label: 'Embaralhar navios', ghost: true }, { id: 'ready', label: 'Pronto!', pink: true }];
   g.pack = (S, seat) => ({ n: 2, fleet: S.fleet.map((f, k) => k === seat || S.win != null ? f : f.filter((_, i) => sunk(S, k, i))), shots: S.shots, ready: S.ready, shuf: S.shuf, ph: S.ph, turn: S.turn, last: S.last, tm: r3(S.tm), tn: S.tn, mid: S.mid, win: S.win });
   g.unpack = d => {
     const ship = s => ({ x: sanInt(s && s.x, 0, 9, 0), y: sanInt(s && s.y, 0, 9, 0), len: sanInt(s && s.len, 2, 5, 2), dir: s && s.dir ? 1 : 0 });
@@ -5157,18 +5198,24 @@ const Naval = (() => {
         return shadowAll(gr);
       }),
       pegs: piecePool(sc, key => { const me = cyl(.008, .009, .022, key === 'r' ? mat('#e23a3a', .35, 0, { emissive: '#ff3b30', emissiveIntensity: .8 }) : mat('#f4f4f4', .4), 14); return me; }),
-      hover: (() => { const r = new THREE.Mesh(new THREE.RingGeometry(.016, .022, 24), new THREE.MeshBasicMaterial({ color: '#ffc95c', transparent: true, opacity: 0, depthWrite: false })); r.rotation.x = -Math.PI / 2; sc.add(r); return r; })()
+      hover: (() => { const r = new THREE.Mesh(new THREE.RingGeometry(.016, .022, 24), new THREE.MeshBasicMaterial({ color: '#ffc95c', transparent: true, opacity: 0, depthWrite: false })); r.rotation.x = -Math.PI / 2; sc.add(r); return r; })(),
+      // where the held ship would land: green if it fits, red if it touches another ship
+      foot: (() => { const f = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ color: '#3fd39a', transparent: true, opacity: 0, depthWrite: false })); sc.add(f); return f; })()
     };
   };
   g.render = (V, dt, o) => {
     const me = o.local ? o.side : null, items = [];
-    for (const k of [0, 1]) V.fleet[k].forEach((sh, i) => {
-      const cs = cellsOf(sh), a = cellPos(k, cs[0][0], cs[0][1]), b = cellPos(k, cs[cs.length - 1][0], cs[cs.length - 1][1]);
+    const editing = V.ph === 'place' && me != null && ctl.flMid === V.mid && ctl.fl, H = editing && ctl.hold;
+    const span = (k, sh) => { const cs = cellsOf(sh), a = cellPos(k, cs[0][0], cs[0][1]), b = cellPos(k, cs[cs.length - 1][0], cs[cs.length - 1][1]); return { x: (a.x + b.x) / 2, z: (a.z + b.z) / 2, ry: Math.atan2(-(b.z - a.z), b.x - a.x) }; };
+    for (const k of [0, 1]) (editing && k === me ? ctl.fl : V.fleet[k]).forEach((sh0, i) => {
+      const held = H && k === me && H.i === i, sh = held ? H : sh0, cs = cellsOf(sh), sp = span(k, sh);
       const isSunk = cs.every(([x, y]) => V.shots[k][y * N + x] === 2), mine = me === k || me == null;
       if (!mine && !isSunk) return;
-      items.push({ key: 'ship' + k + '_' + i + (isSunk ? 's' : ''), len: sh.len, sunk: isSunk, x: (a.x + b.x) / 2, y: TY + .002 - (isSunk ? .008 : 0), z: (a.z + b.z) / 2, ry: Math.atan2(-(b.z - a.z), b.x - a.x), from: { x: (a.x + b.x) / 2, y: TY + .15, z: (a.z + b.z) / 2, ry: Math.atan2(-(b.z - a.z), b.x - a.x) } });
+      items.push({ key: 'ship' + k + '_' + i + (isSunk ? 's' : ''), len: sh.len, sunk: isSunk, x: sp.x, y: TY + .002 - (isSunk ? .008 : 0) + (held ? .01 : 0), z: sp.z, ry: sp.ry, from: { x: sp.x, y: TY + .15, z: sp.z, ry: sp.ry } });
     });
     m.ships.frame(items, dt, .03);
+    if (H) { const sp = span(me, H); m.foot.position.set(sp.x, TY + .004, sp.z); m.foot.rotation.set(-Math.PI / 2, sp.ry, 0, 'YXZ'); m.foot.scale.set(H.len * C, C, 1); m.foot.material.color.set(H.ok ? '#3fd39a' : '#ff4f6d'); }
+    m.foot.material.opacity += ((H ? .7 : 0) - m.foot.material.opacity) * lerpK(dt, 16);
     m.pegs.begin();
     for (const k of [0, 1]) for (let i = 0; i < N * N; i++) if (V.shots[k][i]) { const p = cellPos(k, i % N, Math.floor(i / N)), pg = m.pegs.get(V.shots[k][i] === 2 ? 'r' : 'w'); pg.position.set(p.x, TY + .016, p.z); }
     m.pegs.end();
@@ -5181,7 +5228,7 @@ const Naval = (() => {
   g.hud = (V, vs) => {
     const nm = names(vs), L = V.last;
     let line;
-    if (V.ph === 'place') line = vs != null && !V.ready[vs] && ctl.ready !== V.mid ? 'Posicione sua frota: embaralhe até gostar e aperte Pronto' : 'Esperando ' + (vs == null ? 'os jogadores' : nm[1 - vs]) + ' posicionar a frota…';
+    if (V.ph === 'place') line = vs != null && !V.ready[vs] && ctl.ready !== V.mid ? (ctl.hold ? 'Solte o navio no seu mar · R ou clique direito gira' : 'Monte sua frota: clique num navio para movê-lo, ou embaralhe · depois aperte Pronto') : 'Esperando ' + (vs == null ? 'os jogadores' : nm[1 - vs]) + ' posicionar a frota…';
     else {
       const shotTxt = L ? nm[L.k] + (L.res === 'miss' ? ' errou (' + coord(L.x, L.y) + ')' : L.res === 'hit' ? ' acertou (' + coord(L.x, L.y) + ')!' : ' afundou o ' + SHIP_NAME[L.len] + '!') + ' · ' : '';
       line = shotTxt + (V.win != null ? '' : vs != null && V.turn === vs ? 'Sua vez: toque no mar do adversário' : 'Vez de ' + nm[V.turn]);
@@ -5341,7 +5388,7 @@ function updateHud(view, el) {
   if (showP) $('pfill').style.width = Math.round(h.power * 100) + '%';
 }
 function showGameUi(on) {
-  if (!on) { $('acts').hidden = true; hudCache.acts = ''; hudCache.bm = ''; }
+  if (!on) { $('acts').hidden = true; hudCache.acts = ''; hudCache.bm = ''; canvas.style.cursor = ''; }
   $('hud').hidden = !on; $('help').hidden = !on; if (!on) { $('power').hidden = true; setText('big', ''); }
   $('chat').hidden = !(on && room && (mode === 'host' || mode === 'guest'));
 }
@@ -5786,7 +5833,7 @@ function frame(now) {
     updateFx(paused ? 0 : dt);
     draw();
   }
-  ptr.fresh = false; ptr.pressed = false; ptr.released = false; for (const k in digitPressed) delete digitPressed[k];
+  ptr.fresh = false; ptr.pressed = false; ptr.released = false; rotPressed = false; for (const k in digitPressed) delete digitPressed[k];
   requestAnimationFrame(frame);
 }
 
