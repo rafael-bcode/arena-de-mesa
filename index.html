@@ -117,7 +117,7 @@ input.code{font:700 18px var(--ui);letter-spacing:.38em;text-transform:uppercase
 #chatForm{display:flex;gap:6px;margin:0}
 #chatIn{flex:1;min-width:0;font:500 16px var(--ui);padding:8px 10px;border-radius:6px;border:1px solid var(--line);background:#0e1018;color:var(--ink)}
 #chatForm .btn{padding:8px 12px}
-#toast{position:fixed;left:50%;top:96px;transform:translateX(-50%);background:#141725;border:1px solid var(--line);padding:8px 16px;border-radius:999px;font-size:14px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:9;white-space:nowrap}
+#toast{position:fixed;left:50%;top:96px;transform:translateX(-50%);background:#141725;border:1px solid var(--line);padding:8px 16px;border-radius:18px;width:max-content;font-size:14px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:9;max-width:calc(100vw - 32px);box-sizing:border-box;text-align:center;line-height:1.35}
 #toast.show{opacity:1}
 #fatal{position:fixed;inset:0;display:grid;place-items:center;padding:16px;text-align:center;color:var(--dim);z-index:20;background:var(--bg)}
 @media (prefers-reduced-motion:reduce){.pulse{animation:none}.card{transition:none}}
@@ -1511,7 +1511,7 @@ function piecePool(sc, make) {   // meshes reused frame to frame, keyed by look 
   };
 }
 // click a piece, then a destination; sends [mid, tn, from, to] until the host applies it
-function boardLocal(V, side, legal) {
+function boardLocal(V, side, legal, why) {
   if (ctl.tn !== V.tn || ctl.mid !== V.mid) { ctl.tn = V.tn; ctl.mid = V.mid; ctl.sel = -1; ctl.mv = null; }
   const my = V.turn === side && V.win == null;
   if (!my) ctl.sel = -1;
@@ -1519,10 +1519,15 @@ function boardLocal(V, side, legal) {
     const sq = pickSquare(), ms = legal(V), hit = ctl.sel >= 0 && ms.find(m => m.f === ctl.sel && m.t === sq);
     if (hit) { ctl.mv = [V.mid, V.tn, hit.f, hit.t]; ctl.sel = -1; }
     else if (ms.some(m => m.f === sq)) { ctl.sel = ctl.sel === sq ? -1 : sq; tone(880, .04, { vol: .06 }); }
-    else ctl.sel = -1;
+    else {
+      ctl.sel = -1;
+      const w = why && why(V, sq, ms);
+      if (w) { toast(w.msg); ctl.flash = w.sqs || []; ctl.flashT = performance.now(); tone(220, .12, { type: 'triangle', vol: .07 }); }
+    }
   }
   return { mv: ctl.mv };
 }
+const flashSquares = () => ctl.flash && performance.now() - ctl.flashT < 2200 ? ctl.flash : [];
 function boardShot(S, inp) {
   const mv = inp && inp.mv;
   return (Array.isArray(mv) && mv[0] === S.mid && mv[1] === S.tn && S.win == null) ? [num(mv[2], -1) | 0, num(mv[3], -1) | 0] : null;
@@ -1638,7 +1643,12 @@ const Damas = (() => {
     });
     return p ? { mv: [S.mid, S.tn, p.f, p.t] } : {};
   };
-  g.local = (V, side) => boardLocal(V, side, legal);
+  const why = (V, sq, ms) => {
+    const v = sq >= 0 ? V.b[sq] : 0; if (!v || (V.turn === 0 ? v < 0 : v > 0)) return null;
+    if (ms.length && ms[0].caps.length) return { msg: 'Captura obrigatória: jogue com uma peça que pode capturar (anel dourado).', sqs: [] };
+    return { msg: 'Essa peça não tem para onde ir agora.', sqs: [] };
+  };
+  g.local = (V, side) => boardLocal(V, side, legal, why);
   g.pack = S => ({ b: S.b, turn: S.turn, tn: S.tn, mid: S.mid, win: S.win, last: S.last, quiet: S.quiet });
   g.unpack = d => {
     const L = d.last && typeof d.last === 'object' ? d.last : null;
@@ -1847,7 +1857,27 @@ const Xadrez = (() => {
     });
     return p ? { mv: [S.mid, S.tn, p.f, p.t] } : {};
   };
-  g.local = (V, side) => boardLocal(V, side, legal);
+  // enemy pieces that attack `sq` (each tested with the other enemy pieces turned into inert blockers)
+  function attackers(b, sq, by) {
+    const out = [];
+    for (let q = 0; q < 64; q++) {
+      if (sideOf(b[q]) !== by) continue;
+      const t = b.map((p, i) => i !== q && sideOf(p) === by ? 'x' : p);
+      if (attacked(t, sq, by)) out.push(q);
+    }
+    return out;
+  }
+  const NAME = { P: 'Esse peão', N: 'Esse cavalo', B: 'Esse bispo', R: 'Essa torre', Q: 'Essa dama', K: 'Esse rei' };
+  const why = (V, sq) => {
+    if (sq < 0 || sideOf(V.b[sq]) !== V.turn) return null;
+    const side = V.turn, opp = 1 - side, U = V.b[sq].toUpperCase(), ks = kingSq(V.b, side), ps = pseudo(V, side).filter(x => x.f === sq);
+    if (!ps.length) return { msg: NAME[U] + ' não tem casa livre agora.', sqs: [] };
+    if (V.chk) return { msg: 'Seu rei está em xeque: só valem lances que tirem o rei do xeque.', sqs: [ks, ...attackers(V.b, ks, opp)] };
+    if (U === 'K') return { msg: 'Esse rei não tem casa segura: todas estão atacadas.', sqs: [] };
+    const n = make(V, side, ps[0]);
+    return { msg: NAME[U] + (U === 'R' || U === 'Q' ? ' está cravada' : ' está cravado') + ': se sair, seu rei fica em xeque.', sqs: [ks, ...attackers(n.b, kingSq(n.b, side), opp)] };
+  };
+  g.local = (V, side) => boardLocal(V, side, legal, why);
   g.pack = S => ({ b: S.b.join(''), cr: S.cr, ep: S.ep, hm: S.hm, turn: S.turn, tn: S.tn, mid: S.mid, win: S.win, last: S.last, chk: S.chk, msg: S.msg });
   g.unpack = d => {
     const okB = typeof d.b === 'string' && /^[.PNBRQKpnbrqk]{64}$/.test(d.b), L = d.last && typeof d.last === 'object' ? d.last : null;
@@ -1930,7 +1960,7 @@ const Xadrez = (() => {
     m.mk.set('dot', ms.filter(x => V.b[x.t] === '.' && !x.ep).map(x => sqPos(x.t)));
     m.mk.set('cap', ms.filter(x => V.b[x.t] !== '.' || x.ep).map(x => sqPos(x.t)));
     const ks = kingSq(V.b, V.turn);
-    m.mk.set('check', V.chk && ks >= 0 ? [sqPos(ks)] : []);
+    m.mk.set('check', (V.chk && ks >= 0 ? [ks] : []).concat(o.local ? flashSquares() : []).map(sqPos));
     return null;
   };
   g.hud = (V, vs) => {
@@ -2374,7 +2404,7 @@ const dialogs = ['home', 'lobby', 'msg', 'over'];
 function showDialog(id) { dialogs.forEach(d => $(d).hidden = d !== id); }
 function showMsg(eye, title, text) { $('msgEye').textContent = eye; $('msgTitle').textContent = title; $('msgText').textContent = text; showDialog('msg'); }
 let toastT = 0;
-function toast(t) { const el = $('toast'); el.textContent = t; el.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove('show'), 2400); }
+function toast(t) { const el = $('toast'); el.textContent = t; el.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove('show'), t.length > 40 ? 4000 : 2400); }
 function showHomeErr(t) { const e = $('homeErr'); e.textContent = t; e.hidden = false; }
 
 function showOver(w, view) {
