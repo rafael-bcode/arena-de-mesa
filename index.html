@@ -93,6 +93,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--gold);outline-o
 .join{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .nick{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:center}
 .nick label{color:var(--dim);font-size:13px}
+#inviteNick{font:600 16px var(--ui);padding:10px 12px;border-radius:6px;border:1px solid var(--line);background:#0e1018;color:var(--ink);width:100%;box-sizing:border-box;text-align:center}
 #nickIn{font:600 15px var(--ui);padding:9px 10px;border-radius:6px;border:1px solid var(--line);background:#0e1018;color:var(--ink);min-width:0}
 .join label{color:var(--dim);font-size:13px}
 input.code{font:700 18px var(--ui);letter-spacing:.38em;text-transform:uppercase;text-align:center;width:8.5ch;padding:10px 6px;border-radius:6px;border:1px solid var(--line);background:#0e1018;color:var(--ink)}
@@ -398,6 +399,18 @@ input.code{font:700 18px var(--ui);letter-spacing:.38em;text-transform:uppercase
     <p id="msgText"></p>
     <button class="btn ghost" id="btnMsgBack">Voltar aos jogos</button>
   </div>
+</div>
+
+<!-- Opened from a room link: pick a name before joining -->
+<div class="ov dlg" id="invite" hidden>
+  <form class="box" id="inviteForm">
+    <p class="eyebrow">CONVITE · SALA <span id="inviteCode"></span></p>
+    <h2>Você foi chamado para jogar</h2>
+    <label for="inviteNick">Como quer aparecer para os outros jogadores?</label>
+    <input id="inviteNick" maxlength="16" placeholder="Seu nome" autocomplete="nickname" spellcheck="false">
+    <button class="btn pink" type="submit">Entrar na sala</button>
+    <button class="btn ghost" type="button" id="btnInviteNo">Agora não</button>
+  </form>
 </div>
 
 <!-- Game over -->
@@ -5781,7 +5794,22 @@ window.__arena = { state: () => S, view: () => V, ctl: () => ctl, game: () => G 
 markCards();
 buildGame(selGame); newMatch(prefSeats(selGame));
 // opened from a shared link: join that room right away
-{ const mm = /sala=([A-Za-z0-9]{4})/.exec(location.hash); if (mm && net) { $('codeIn').value = mm[1].toUpperCase(); setTimeout(joinRoom, 300); } }
+// a room link asks for the player's name first (pre-filled with the last one used), then joins
+{
+  const mm = /sala=([A-Za-z0-9]{4})/.exec(location.hash);
+  if (mm && net) {
+    const code = mm[1].toUpperCase();
+    $('codeIn').value = code; $('inviteCode').textContent = code; $('inviteNick').value = myNick;
+    $('invite').hidden = false; setTimeout(() => $('inviteNick').focus(), 50);
+    $('inviteForm').onsubmit = e => {
+      e.preventDefault();
+      myNick = cleanNick($('inviteNick').value); $('nickIn').value = myNick;
+      try { localStorage.setItem('arena.nick', myNick); } catch {}
+      $('invite').hidden = true; joinRoom();
+    };
+    $('btnInviteNo').onclick = () => { $('invite').hidden = true; history.replaceState(null, '', location.pathname + location.search); };
+  }
+}
 camPos.set(0, G.cam.h * 1.2, G.cam.d * 1.3);
 requestAnimationFrame(frame);
 })();
