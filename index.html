@@ -628,7 +628,7 @@ const digitPressed = {};
 // ping-pong depth: Q/E and the mouse wheel nudge the paddle toward the net or back
 addEventListener('keydown', e => { if (e.target && e.target.tagName === 'INPUT') return; if (e.code === 'KeyQ') keys.qe = -1; if (e.code === 'KeyE') keys.qe = 1; });
 addEventListener('keyup', e => { if (e.code === 'KeyQ' || e.code === 'KeyE') keys.qe = 0; });
-canvas.addEventListener('wheel', e => { if (G && G.id === 'pong' && mode !== 'menu') { e.preventDefault(); ctl.dq = clamp(num(ctl.dq, 0) + e.deltaY * .0012, -.8, .8); } }, { passive: false });
+canvas.addEventListener('wheel', e => { if (G && G.id === 'pong' && mode !== 'menu') { e.preventDefault(); ctl.q = clamp(num(ctl.q, 1.6) + e.deltaY * .0012, .2, 2.1); } }, { passive: false });
 addEventListener('keydown', e => { if (/^Digit[1-9]$/.test(e.code) && !(e.target && e.target.tagName === 'INPUT')) digitPressed[+e.code.slice(5)] = true; });
 const KEYS = { ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right', ArrowUp: 'up', KeyW: 'up', ArrowDown: 'down', KeyS: 'down', ShiftLeft: 'fine', ShiftRight: 'fine' };
 addEventListener('keydown', e => {
@@ -871,9 +871,9 @@ const Pong = (() => {
   // Real-size table (metres). The ball flies under gravity, bounces on the table and can hit the net; there are no walls.
   // Each paddle moves sideways and up/down with the pointer; its depth follows the ball by itself (wheel/Q-E nudge it).
   const TL = 1.37, TW = .7625, NETH = .1525, BR = .02, PR = .085, HIT = PR + BR + .03, GRAV = 9.8, WIN = 11;
-  const PX = 1.5, PYMIN = .03, PYMAX = .7, ZMIN = .2, ZMAX = 2.1, PSPD = 9, QSPD = 4.2, REFQ = 1.6;
+  const PX = 1.5, PYMIN = .03, PYMAX = .7, ZMIN = .2, ZMAX = 2.1, PSPD = 30, QSPD = 6;
   const g = { id: 'pong', realtime: true, planeY: 0.13, fxY: 0.0, halfW: TW, cam: { h: 1.25, d: 3.05, lz: -0.3 }, ghostable: true,
-    help: 'Mouse ou dedo: a raquete vai para os lados e para cima/baixo (setas também) · a profundidade acompanha a bola (roda do mouse ou Q/E ajustam) · a bola tem que quicar na mesa do adversário · 11 pontos.' };
+    help: 'Mouse ou dedo: a raquete fica sob o cursor, para os lados e para cima/baixo (setas também) · roda do mouse ou Q/E aproximam ou afastam da rede · a bola tem que quicar na mesa do adversário · 11 pontos.' };
   let m = {};
   const sgn = k => k === 0 ? 1 : -1;
   function launch(b, xt, zt, pace) {   // aim at a landing spot, lifting the arc until it clears the net
@@ -986,23 +986,20 @@ const Pong = (() => {
   };
   const vplane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0), vhit = new THREE.Vector3();
   g.local = (V, side, dt) => {
-    const d = sgn(side), q0 = num(ctl.pq, V.p[side][2]);
-    ctl.dq = clamp(num(ctl.dq, 0) + ((keys.qe || 0) * 1.2 * dt), -.8, .8);
-    const qt = clamp(autoDepth(V, side) + ctl.dq, ZMIN, ZMAX);
-    // pointer → a fixed vertical reference plane, so the screen→blade mapping never shifts while the depth follows the ball
+    // the player's paddle is entirely theirs: nothing here moves it on its own
+    const d = sgn(side);
+    ctl.q = clamp(num(ctl.q, 1.6) + (keys.qe || 0) * 1.4 * dt, ZMIN, ZMAX);   // depth only via wheel / Q-E
+    // pointer → the vertical plane at the paddle's own depth, so the blade sits right under the cursor
     if (ptr.valid) {
-      ray.setFromCamera(ndc, camera); vplane.constant = -d * REFQ;
+      ray.setFromCamera(ndc, camera); vplane.constant = -d * ctl.q;
       if (ray.ray.intersectPlane(vplane, vhit)) { ctl.x = vhit.x; ctl.y = vhit.y; }
     }
     const kx = ((keys.right ? 1 : 0) - (keys.left ? 1 : 0)) * d, ky = (keys.up ? 1 : 0) - (keys.down ? 1 : 0);
     if (kx) ctl.x = num(ctl.x, 0) + kx * 2.6 * dt;
     if (ky) ctl.y = num(ctl.y, .2) + ky * 1.6 * dt;
     ctl.x = clamp(num(ctl.x, 0), -PX, PX); ctl.y = clamp(num(ctl.y, .2), PYMIN, PYMAX);
-    // guest-side prediction, same speed caps as the host
-    ctl.px = num(ctl.px, ctl.x); ctl.py = num(ctl.py, ctl.y); ctl.pq = num(ctl.pq, qt);
-    let dx = ctl.x - ctl.px, dy = ctl.y - ctl.py; const dd = Math.hypot(dx, dy), mx = PSPD * dt; if (dd > mx) { dx *= mx / dd; dy *= mx / dd; }
-    ctl.px += dx; ctl.py += dy; ctl.pq += clamp(qt - ctl.pq, -QSPD * dt, QSPD * dt);
-    return { x: r3(ctl.x), y: r3(ctl.y), q: r3(qt) };
+    ctl.px = ctl.x; ctl.py = ctl.y; ctl.pq = ctl.q;   // drawn exactly where the player put it (also on a guest's screen)
+    return { x: r3(ctl.x), y: r3(ctl.y), q: r3(ctl.q) };
   };
   g.pack = S => ({ b: S.b.map(r3), p: S.p.map(a => a.slice(0, 3).map(r3)), sc: S.sc, ph: S.ph, tm: r3(S.tm), srv: S.srv, last: S.last, bnc: S.bnc, why: S.why, pw: S.pw, mid: S.mid });
   g.unpack = d => ({ b: A(d.b, 6), p: [A(d.p && d.p[0], 3), A(d.p && d.p[1], 3)], pv: [0, 0], sc: A(d.sc, 2), ph: ['count', 'play', 'point', 'over'].includes(d.ph) ? d.ph : 'count', tm: num(d.tm, 0),
@@ -5285,7 +5282,8 @@ function placeCamera(dt, now) {
   const f = lerpK(dt, mode === 'menu' ? 30 : 4);
   camPos.x += (tx - camPos.x) * f; camPos.y += (ty - camPos.y) * f; camPos.z += (tz - camPos.z) * f;
   camera.position.copy(camPos);
-  if (shake > 0 && !reduceMotion) { const s = shake * shake * 0.05; camera.position.x += rnd(-s, s); camera.position.y += rnd(-s, s) * .5; }
+  // no shake in ping-pong: the camera is the player's aiming reference
+  if (shake > 0 && !reduceMotion && G.id !== 'pong') { const s = shake * shake * 0.05; camera.position.x += rnd(-s, s); camera.position.y += rnd(-s, s) * .5; }
   camera.lookAt(camLook);
 }
 
