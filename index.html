@@ -212,7 +212,7 @@ input.code{font:700 18px var(--ui);letter-spacing:.38em;text-transform:uppercase
       <button data-cat="real" aria-pressed="false">Tempo real <i>2</i></button>
       <button data-cat="turnos" aria-pressed="false">Por turnos <i>2</i></button>
       <button data-cat="tabuleiro" aria-pressed="false">Tabuleiro <i>3</i></button>
-      <button data-cat="baralho" aria-pressed="false">Baralho <i>3</i></button>
+      <button data-cat="baralho" aria-pressed="false">Baralho <i>4</i></button>
     </div>
     <div id="cards">
     <section class="cat" data-cat="real">
@@ -273,10 +273,10 @@ input.code{font:700 18px var(--ui);letter-spacing:.38em;text-transform:uppercase
         <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"><ellipse cx="17" cy="33" rx="10" ry="4"/><path d="M7 33v-4c0-2 4-4 10-4s10 2 10 4v4"/><ellipse cx="17" cy="29" rx="10" ry="4"/><rect x="26" y="8" width="15" height="21" rx="2" transform="rotate(12 33 18)"/></svg>
         <b>Poker</b><small>Texas Hold'em mano a mano. Fichas, blinds, all-in e showdown.</small>
       </button>
-      <div class="card soon" aria-disabled="true">
-        <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"><circle cx="24" cy="24" r="14"/><circle cx="24" cy="24" r="7" stroke-dasharray="3 3"/></svg>
-        <b>Em breve</b><small>Buraco.</small>
-      </div>
+      <button class="card" data-game="buraco" style="--acc:#ffc95c" aria-pressed="false">
+        <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"><rect x="6" y="12" width="16" height="23" rx="2" transform="rotate(-14 14 23)"/><rect x="16" y="10" width="16" height="23" rx="2"/><rect x="27" y="12" width="16" height="23" rx="2" transform="rotate(14 35 23)"/></svg>
+        <b>Buraco</b><small>Dois baralhos, o 2 é curinga. Canastras, morto e batida. 500 pontos vencem.</small>
+      </button>
       </div>
     </section>
     </div>
@@ -372,7 +372,7 @@ const A = (a, n, d = 0) => { const o = []; for (let i = 0; i < n; i++) o.push(nu
 const PHASE = v => ['count', 'play', 'over'].includes(v) ? v : 'count';
 const angDiff = d => Math.atan2(Math.sin(d), Math.cos(d));
 const COLS = ['#38b6ff', '#ff4f6d'];
-const GAME_NAMES = { pong: 'Ping-pong', toto: 'Totó', pool: 'Sinuca', botao: 'Futebol de botão', damas: 'Damas', xadrez: 'Xadrez', gamao: 'Gamão', oito: 'Oito Maluco', truco: 'Truco', poker: 'Poker' };
+const GAME_NAMES = { pong: 'Ping-pong', toto: 'Totó', pool: 'Sinuca', botao: 'Futebol de botão', damas: 'Damas', xadrez: 'Xadrez', gamao: 'Gamão', oito: 'Oito Maluco', truco: 'Truco', poker: 'Poker', buraco: 'Buraco' };
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 // CPU difficulty: 0 fácil, 1 normal, 2 difícil — each game's cpu() reads its knobs from here
 let diff = 1;
@@ -3095,7 +3095,276 @@ const Poker = (() => {
   return g;
 })();
 
-const GAMES = { pong: Pong, toto: Toto, pool: Pool, botao: Botao, damas: Damas, xadrez: Xadrez, gamao: Gamao, oito: Oito, truco: Truco, poker: Poker };
+// ======================================================================
+// GAME 11: BURACO (2 baralhos, 2 é curinga, 1x1)
+// ======================================================================
+const Buraco = (() => {
+  const GOAL = 500;
+  const g = { id: 'buraco', realtime: false, planeY: TY, fxY: TY, halfW: .6, cam: { h: 1.08, d: .9, lz: .06 },
+    help: 'Compre do monte ou pegue o lixo · toque nas cartas para selecionar e baixe sequências do mesmo naipe (o 2 é curinga) · toque num jogo seu para encaixar · descarte uma para passar a vez.' };
+  let m = {};
+  const pts = id => { const r = cRank(id); return r === 0 ? 15 : r === 1 ? 10 : r >= 7 ? 10 : 5; };
+  const sortKey = id => cRank(id) === 1 ? 100 + cSuit(id) : cSuit(id) * 20 + (cRank(id) === 0 ? 14 : cRank(id) + 1);
+  const sortHand = h => h.sort((a, b) => sortKey(a) - sortKey(b));
+  // Same-suit sequence of 3+; at most one wild 2 (a 2 of the suit in its own place counts as natural). → {c: ordered ids, w: wild index or -1} or null
+  function arrange(cards) {
+    if (cards.length < 3) return null;
+    const twos = cards.filter(id => cRank(id) === 1), others = cards.filter(id => cRank(id) !== 1);
+    if (!others.length || new Set(others.map(cSuit)).size > 1) return null;
+    const suit = cSuit(others[0]), nat = twos.find(id => cSuit(id) === suit);
+    for (const n of nat != null ? [nat, null] : [null]) {
+      const wild = twos.filter(t => t !== n); if (wild.length > 1) continue;
+      for (const aceHigh of [false, true]) {
+        const items = others.map(id => ({ id, v: cRank(id) === 0 ? (aceHigh ? 14 : 1) : cRank(id) + 1 }));
+        if (n != null) items.push({ id: n, v: 2 });
+        items.sort((a, b) => a.v - b.v);
+        if (new Set(items.map(i => i.v)).size !== items.length) continue;
+        const lo = items[0].v, hi = items[items.length - 1].v;
+        if (hi - lo + 1 - items.length > wild.length) continue;
+        const c = []; let w = -1;
+        for (let v = lo, j = 0; v <= hi; v++) { if (items[j] && items[j].v === v) c.push(items[j++].id); else { w = c.length; c.push(wild[0]); } }
+        if (wild.length && w < 0) { if (hi < 14) { w = c.length; c.push(wild[0]); } else if (lo > 1) { w = 0; c.unshift(wild[0]); } else continue; }
+        return { c, w };
+      }
+    }
+    return null;
+  }
+  const isCanastra = md => md.c.length >= 7, isClean = md => md.c.length >= 7 && md.w < 0;
+  const hasClean = (S, k) => S.melds[k].some(isClean);
+  const mortoFree = (S, k) => !S.took[k] && (typeof S.mortos === 'number' ? S.mortos : S.mortos.length) > 0;   // the guest only gets a count
+  const canEmpty = (S, k) => mortoFree(S, k) || hasClean(S, k);
+  const remOk = (S, k, n) => S.hands[k].length - n >= 2 || canEmpty(S, k);
+  function startRound(S) {
+    const deck = shuffle([...Array(104).keys()]);
+    S.hands = [sortHand(deck.splice(0, 11)), sortHand(deck.splice(0, 11))];
+    S.mortos = [deck.splice(0, 11), deck.splice(0, 11)];
+    S.lixo = [deck.pop()]; S.stock = deck; S.melds = [[], []]; S.took = [false, false];
+    S.turn = S.starter; S.ph = 'draw'; S.tm = 0; S.msg = ''; S.res = null; S.round++; S.tn++;
+  }
+  g.init = () => { const S = { score: [0, 0], starter: Math.random() < .5 ? 0 : 1, round: 0, tn: 0, mid: rid(), win: null }; startRound(S); return S; };
+  function endRound(S, bateu) {
+    const res = [0, 1].map(k => {
+      let table = 0, bonus = 0;
+      for (const md of S.melds[k]) { for (const id of md.c) table += pts(id); if (isCanastra(md)) bonus += md.w < 0 ? 200 : 100; }
+      const hand = S.hands[k].reduce((a, id) => a + pts(id), 0);
+      return { table, bonus, bat: bateu === k ? 100 : 0, hand, morto: S.took[k] ? 0 : -100 };
+    });
+    res.forEach((r, k) => { r.total = r.table + r.bonus + r.bat - r.hand + r.morto; S.score[k] += r.total; });
+    S.res = { r: res, bateu }; S.ph = 'end'; S.tm = 0; S.tn++;
+    ev(S, 'goal', 0, bateu >= 0 ? sgnS(bateu) * .25 : 0, 1, bateu >= 0 ? bateu : -1);
+  }
+  // the hand just ran out: take the morto (and keep playing if it happened mid-turn) or go out
+  function emptied(S, k, byDiscard) {
+    if (mortoFree(S, k)) {
+      S.hands[k] = sortHand(S.mortos.pop()); S.took[k] = true; S.msg = 'morto'; ev(S, 'card', 0, sgnS(k) * .3, 1, k);
+      if (byDiscard) { S.turn = 1 - k; S.ph = 'draw'; }
+      return;
+    }
+    endRound(S, k);
+  }
+  g.step = (S, dt, i0, i1) => {
+    if (S.win != null) return;
+    if (S.ph === 'end') {
+      S.tm += dt;
+      if (S.tm > 5) {
+        if (Math.max(...S.score) >= GOAL && S.score[0] !== S.score[1]) S.win = S.score[0] > S.score[1] ? 0 : 1;
+        else { S.starter = 1 - S.starter; startRound(S); }
+      }
+      return;
+    }
+    const k = S.turn, inp = k === 0 ? i0 : i1, a = inp && inp.act;
+    if (!Array.isArray(a) || a[0] !== S.mid || a[1] !== S.tn) return;
+    const h = S.hands[k], kind = a[2];
+    const owned = ids => Array.isArray(ids) && ids.length && new Set(ids).size === ids.length && ids.every(id => h.includes(id));
+    const take = ids => { for (const id of ids) h.splice(h.indexOf(id), 1); };
+    if (S.ph === 'draw') {
+      if (kind === 'stock') {
+        if (!S.stock.length) { endRound(S, -1); return; }   // monte acabou: a rodada termina sem batida
+        h.push(S.stock.pop()); S.msg = '';
+      } else if (kind === 'lixo' && S.lixo.length) { h.push(...S.lixo); S.lixo = []; S.msg = 'lixo'; }
+      else return;
+      sortHand(h); S.ph = 'play'; S.tn++; ev(S, 'card', 0, sgnS(k) * .35, 1, k); return;
+    }
+    if (kind === 'meld') {
+      const ids = a[3]; if (!owned(ids) || !remOk(S, k, ids.length)) return;
+      const md = arrange(ids); if (!md) return;
+      take(ids); S.melds[k].push(md); S.msg = ''; S.tn++; ev(S, 'place', 0, sgnS(k) * .2, 1, k);
+      if (!h.length) emptied(S, k, false);
+    } else if (kind === 'add') {
+      const mi = num(a[3], -1) | 0, ids = a[4], md0 = S.melds[k][mi];
+      if (!md0 || !owned(ids) || !remOk(S, k, ids.length)) return;
+      const md = arrange(md0.c.concat(ids)); if (!md) return;
+      take(ids); S.melds[k][mi] = md; S.msg = isCanastra(md) && !isCanastra(md0) ? (md.w < 0 ? 'limpa' : 'suja') : ''; S.tn++;
+      ev(S, isCanastra(md) && !isCanastra(md0) ? 'capture' : 'place', 0, sgnS(k) * .2, 1, k);
+      if (!h.length) emptied(S, k, false);
+    } else if (kind === 'discard') {
+      const id = num(a[3], -1) | 0; if (!h.includes(id)) return;
+      if (h.length === 1 && !canEmpty(S, k)) return;
+      take([id]); S.lixo.push(id); S.msg = ''; S.tn++; ev(S, 'card', 0, 0, 1, k);
+      if (!h.length) { emptied(S, k, true); return; }
+      S.turn = 1 - k; S.ph = 'draw';
+    }
+  };
+  // ---- CPU ----
+  const vOf = (id, hi) => cRank(id) === 0 ? (hi ? 14 : 1) : cRank(id) + 1;
+  function findRun(h, useWild) {   // longest natural run in one suit (or a 2-gap filled by one wild)
+    let best = null;
+    for (let s = 0; s < 4; s++) for (const hi of [false, true]) {
+      const byV = new Map(); h.filter(id => cRank(id) !== 1 && cSuit(id) === s).forEach(id => { if (!byV.has(vOf(id, hi))) byV.set(vOf(id, hi), id); });
+      const vs = [...byV.keys()].sort((a, b) => a - b);
+      for (let i = 0; i < vs.length; i++) {
+        let j = i; while (j + 1 < vs.length && vs[j + 1] === vs[j] + 1) j++;
+        if (j - i + 1 >= 3 && (!best || j - i + 1 > best.length)) best = vs.slice(i, j + 1).map(v => byV.get(v));
+      }
+      if (!best && useWild) {
+        const two = h.find(id => cRank(id) === 1);
+        if (two != null) for (let i = 0; i + 1 < vs.length; i++) if (vs[i + 1] - vs[i] === 2) { best = [byV.get(vs[i]), two, byV.get(vs[i + 1])]; break; }
+      }
+    }
+    return best;
+  }
+  const near = (h, id) => h.filter(x => x !== id && cRank(x) !== 1 && cSuit(x) === cSuit(id) && Math.abs(vOf(x, false) - vOf(id, false)) <= 2).length;
+  function cpuMove(S, k) {
+    const h = S.hands[k], o = 1 - k;
+    if (S.ph === 'draw') {
+      const top = S.lixo[S.lixo.length - 1];
+      // take the pile only when its top card plays right away (extends a game or completes a run)
+      const useful = top != null && cRank(top) !== 1 && (S.melds[k].some(md => arrange(md.c.concat(top))) || (findRun(h.concat(top), false) || []).includes(top));
+      return useful && Math.random() > DIFF([.5, .15, 0]) ? ['lixo'] : ['stock'];
+    }
+    for (let mi = 0; mi < S.melds[k].length; mi++) {
+      const md = S.melds[k][mi];
+      for (const id of h) {
+        if (cRank(id) === 1 && (md.w >= 0 || md.c.length < 5 || (!hasClean(S, k) && h.length < 9))) continue;   // keep wilds for later unless the hand is bloated
+        if (arrange(md.c.concat(id)) && remOk(S, k, 1)) return ['add', mi, [id]];
+      }
+    }
+    const run = findRun(h, diff > 0 && (hasClean(S, k) || h.length >= 9));
+    if (run && remOk(S, k, run.length)) return ['meld', run];
+    // discard: the least connected card, avoiding what extends the opponent's games; keep the wilds
+    const danger = id => S.melds[o].some(md => arrange(md.c.concat(id))) ? 4 : 0;
+    // a card is worth keeping if it neighbours same-suit cards in hand (copies of the same card don't count)
+    const keep = id => h.filter(x => x !== id && cRank(x) !== 1 && cSuit(x) === cSuit(id) && cRank(x) !== cRank(id) && Math.abs(vOf(x, false) - vOf(id, false)) <= 2).length;
+    const cands = h.filter(id => cRank(id) !== 1);
+    const pool = cands.length ? cands : h;
+    const best = pool.slice().sort((a, b) => (keep(a) + danger(a)) - (keep(b) + danger(b)) || pts(b) - pts(a))[diff === 0 ? Math.floor(Math.random() * Math.min(3, pool.length)) : 0];
+    return ['discard', best];
+  }
+  g.cpu = (S, side, dt, mem) => {
+    if (S.win != null || S.ph === 'end' || S.turn !== side) return {};
+    if (mem.tn !== S.tn || mem.mid !== S.mid) { mem.tn = S.tn; mem.mid = S.mid; mem.t = 0; mem.mv = null; }
+    mem.t += dt; if (mem.t < .75) return {};
+    if (!mem.mv) mem.mv = cpuMove(S, side);
+    return { act: [S.mid, S.tn].concat(mem.mv) };
+  };
+  // ---- player: select cards, then act ----
+  g.local = (V, side) => {
+    if (ctl.tn !== V.tn || ctl.mid !== V.mid) { ctl.tn = V.tn; ctl.mid = V.mid; ctl.out = {}; ctl.sel = []; }
+    const act = ctl.act; ctl.act = null;
+    if (V.win != null || V.ph === 'end' || V.turn !== side) return ctl.out;
+    const send = (...x) => { ctl.out = { act: [V.mid, V.tn, ...x] }; };
+    if (act === 'stock' || act === 'lixo') send(act);
+    else if (act === 'meld') send('meld', ctl.sel.slice());
+    else if (act === 'discard' && ctl.sel.length === 1) send('discard', ctl.sel[0]);
+    else if (act === 'clear') ctl.sel = [];
+    else if (ptr.pressed && !ptr.kbd) {
+      if (V.ph === 'draw') {
+        const key = m.cards.pick(['st0', 'st1', 'st2', 'st3'].concat(V.lixo.slice(-16).map(id => 'c' + id)));
+        if (key) send(key.startsWith('st') ? 'stock' : 'lixo');
+        return ctl.out;
+      }
+      const meldKeys = new Map();
+      V.melds[side].forEach((md, mi) => md.c.forEach(id => meldKeys.set('c' + id, mi)));
+      const key = m.cards.pick(V.hands[side].map(id => 'c' + id).concat([...meldKeys.keys()]));
+      if (!key) return ctl.out;
+      if (meldKeys.has(key)) {
+        const mi = meldKeys.get(key);
+        if (!ctl.sel.length) toast('Selecione cartas da mão e toque no jogo para encaixar.');
+        else if (!arrange(V.melds[side][mi].c.concat(ctl.sel))) toast('Essas cartas não encaixam nesse jogo.');
+        else if (!remOk(V, side, ctl.sel.length)) toast('Guarde pelo menos uma carta para descartar (ou pegue o morto / tenha canastra limpa para bater).');
+        else send('add', mi, ctl.sel.slice());
+      } else {
+        const id = +key.slice(1), i = ctl.sel.indexOf(id);
+        if (i >= 0) ctl.sel.splice(i, 1); else ctl.sel.push(id);
+        tone(880, .03, { vol: .05 });
+      }
+    }
+    return ctl.out;
+  };
+  g.actions = (V, vs) => {
+    if (vs == null || V.win != null || V.ph === 'end' || V.turn !== vs) return [];
+    if (V.ph === 'draw') return [{ id: 'stock', label: 'Comprar do monte' }].concat(V.lixo.length ? [{ id: 'lixo', label: 'Pegar o lixo (' + V.lixo.length + ')', ghost: true }] : []);
+    const sel = ctl.tn === V.tn ? ctl.sel || [] : [], r = [];
+    if (sel.length >= 3 && arrange(sel) && remOk(V, vs, sel.length)) r.push({ id: 'meld', label: 'Baixar jogo (' + sel.length + ')' });
+    if (sel.length === 1 && (V.hands[vs].length > 1 || canEmpty(V, vs))) r.push({ id: 'discard', label: 'Descartar ' + cardName(sel[0]), pink: true });
+    if (sel.length) r.push({ id: 'clear', label: 'Limpar seleção', ghost: true });
+    return r;
+  };
+  g.pack = S => ({ score: S.score, starter: S.starter, round: S.round, hands: [hidePack(S.hands[0], S.ph === 'end' || S.win != null), S.hands[1]], mortos: S.mortos.length,
+    lixo: S.lixo, stock: S.stock.length, melds: S.melds, took: S.took, turn: S.turn, ph: S.ph, tm: r3(S.tm), msg: S.msg, res: S.res, tn: S.tn, mid: S.mid, win: S.win });
+  g.unpack = d => {
+    const meld = md => ({ c: unpackIds(md && md.c, 104).filter(v => v >= 0).slice(0, 14), w: sanInt(md && md.w, -1, 13, -1) });
+    const R = d.res && typeof d.res === 'object' && Array.isArray(d.res.r) ? d.res : null;
+    return {
+      score: A(d.score, 2).map(v => Math.round(v)), starter: d.starter === 1 ? 1 : 0, round: num(d.round, 1),
+      hands: [unpackIds(d.hands && d.hands[0]), unpackIds(d.hands && d.hands[1])], mortos: sanInt(d.mortos, 0, 2, 0), lixo: unpackIds(d.lixo).filter(v => v >= 0),
+      stock: sanInt(d.stock, 0, 104, 0), melds: [0, 1].map(k => (Array.isArray(d.melds && d.melds[k]) ? d.melds[k] : []).slice(0, 20).map(meld)),
+      took: [!!(d.took && d.took[0]), !!(d.took && d.took[1])], turn: d.turn === 1 ? 1 : 0, ph: ['draw', 'play', 'end'].includes(d.ph) ? d.ph : 'draw', tm: num(d.tm, 0),
+      msg: String(d.msg || ''), tn: num(d.tn, 0), mid: d.mid, win: d.win === 0 || d.win === 1 ? d.win : null,
+      res: R ? { bateu: sanInt(R.bateu, -1, 1, -1), r: R.r.slice(0, 2).map(x => ({ table: num(x && x.table, 0), bonus: num(x && x.bonus, 0), bat: num(x && x.bat, 0), hand: num(x && x.hand, 0), morto: num(x && x.morto, 0), total: num(x && x.total, 0) })) } : null
+    };
+  };
+  g.build = sc => { buildCardTable(sc); m = { cards: cardTable(sc) }; };
+  g.render = (V, dt, o) => {
+    const me = o.local ? o.side : null, items = [], stockTop = { x: -.64, y: TY + .03, z: 0, rz: Math.PI, ry: .1 };
+    const nStock = typeof V.stock === 'number' ? V.stock : V.stock.length, nMortos = typeof V.mortos === 'number' ? V.mortos : V.mortos.length;
+    const drawTurn = me != null && V.turn === me && V.ph === 'draw' && V.win == null;
+    for (let i = 0; i < Math.min(nStock, 12); i++) items.push({ key: 'st' + Math.min(i, 3) + (i > 3 ? '_' + i : ''), id: -1, x: -.64, y: TY + .001 + i * .0011, z: 0, rz: Math.PI, ry: .1, glow: drawTurn });
+    for (let k = 0; k < nMortos; k++) for (let i = 0; i < 5; i++) items.push({ key: 'mo' + k + '_' + i, id: -1, x: -.62, y: TY + .001 + i * .0011, z: k ? .17 : -.17, rz: Math.PI, ry: Math.PI / 2 });
+    V.lixo.slice(-16).forEach((id, i, a) => items.push({ key: 'c' + id, id, x: .5 + i * .014, y: TY + .001 + i * .0011, z: (hsh(id) % 5 - 2) * .003, ry: (hsh(id) % 11 - 5) * .02, glow: drawTurn && i === a.length - 1, from: handFrom(1 - V.turn) }));
+    // games on the table, in rows on each player's side; clean canastras glow
+    for (const k of [0, 1]) {
+      const melds = V.melds[k], cols = melds.length > 8 ? 3 : 2, colW = cols === 3 ? .27 : .4, s = sgnS(k);
+      melds.forEach((md, j) => {
+        const col = j % cols, row = Math.floor(j / cols), n = md.c.length, sp = Math.min(.021, (colW - CW - .012) / Math.max(1, n - 1));
+        const cx = (col - (cols - 1) / 2) * colW, w = CW + (n - 1) * sp;
+        md.c.forEach((id, i) => items.push({ key: 'c' + id, id, x: s * (cx - w / 2 + CW / 2 + i * sp), y: TY + .001 + row * .003 + i * .0007, z: s * (.1 + row * .062), ry: k === 0 ? 0 : Math.PI, glow: isClean(md), from: handFrom(k) }));
+      });
+    }
+    const myPlay = me != null && V.turn === me && V.ph === 'play' && V.win == null, sel = myPlay && ctl.tn === V.tn ? ctl.sel || [] : [];
+    for (const k of [0, 1]) {
+      const ids = V.hands[k], open = me === k || (V.ph === 'end' && ids.every(id => id >= 0)), sp = handSpots(ids.length, k, open, { w: 1.0, sp: .058 });
+      ids.forEach((id, i) => {
+        const spot = Object.assign({}, sp[i]), on = sel.includes(id); if (on) { spot.y += .035; spot.z -= sgnS(k) * .02; }
+        items.push(Object.assign({ key: id >= 0 ? 'c' + id : 'h' + k + '_' + i, id, glow: on, from: id >= 0 ? stockTop : handFrom(k) }, spot));
+      });
+    }
+    m.cards.frame(items, dt);
+    return null;
+  };
+  g.hud = (V, vs) => {
+    const who = s => vs == null ? (s === 0 ? 'Azul' : 'Vermelho') : names(vs)[s];
+    let line = '';
+    if (V.ph === 'end' && V.res) {
+      const R = V.res.r, part = k => who(k) + ' ' + (R[k].total >= 0 ? '+' : '') + R[k].total;
+      line = (V.res.bateu >= 0 ? who(V.res.bateu) + ' bateu! ' : 'O monte acabou. ') + 'Rodada: ' + part(0) + ' · ' + part(1);
+    } else if (V.win == null) {
+      const mine = vs != null && V.turn === vs, k = mine ? vs : V.turn;
+      const canas = V.melds[k].filter(isCanastra), limpas = canas.filter(md => md.w < 0).length;
+      const info = ' · morto ' + (V.took[k] ? 'pego' : 'disponível') + (canas.length ? ' · canastras: ' + limpas + ' limpa' + (limpas === 1 ? '' : 's') + ', ' + (canas.length - limpas) + ' suja' + (canas.length - limpas === 1 ? '' : 's') : '');
+      const msg = { morto: 'Pegou o morto! ', lixo: 'Pegou o lixo. ', limpa: 'Canastra limpa! ', suja: 'Canastra suja! ' }[V.msg] || '';
+      if (mine) line = msg + (V.ph === 'draw' ? 'Sua vez: compre do monte ou pegue o lixo' : 'Baixe jogos ou descarte uma carta') + info;
+      else line = msg + 'Vez de ' + who(V.turn) + info;
+      line += ' · rodada ' + V.round + ', meta ' + GOAL;
+    }
+    return { sc: V.score.slice(), line };
+  };
+  g.winner = V => V.win;
+  g.overText = () => 'Chegou a ' + GOAL + ' pontos primeiro.';
+  return g;
+})();
+
+const GAMES = { pong: Pong, toto: Toto, pool: Pool, botao: Botao, damas: Damas, xadrez: Xadrez, gamao: Gamao, oito: Oito, truco: Truco, poker: Poker, buraco: Buraco };
 
 // ================= runtime =================
 let G = null, scene = null, S = null, V = null;
