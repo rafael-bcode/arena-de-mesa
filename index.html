@@ -3304,7 +3304,8 @@ const Poker = (() => {
   }
   g.render = (V, dt, o) => {
     const n = V.n, me = o.local ? o.side : null, items = [], deck = { x: .4, y: TY + .03, z: -.06, rz: Math.PI, ry: .3 };
-    const DK = n === 2 ? { x: .4, z: -.06 } : { x: .18, z: -.24 };
+    // 3+ players: the deck sits in the gap between the last seat and the first, clear of every hand shown at the showdown
+    const da = TAU / n * (n - .5), DK = n === 2 ? { x: .4, z: -.06 } : { x: Math.sin(da) * .34, z: Math.cos(da) * .34 };
     for (let i = 0; i < 6; i++) items.push({ key: 'd' + i, id: -1, x: DK.x, y: TY + .001 + i * .0011, z: DK.z, rz: Math.PI, ry: .3 });
     Object.assign(deck, DK);
     const va = seatAng(me == null ? 0 : me, n);
@@ -3316,7 +3317,7 @@ const Poker = (() => {
       V.hole[k].forEach((id, i) => {
         const key = id >= 0 ? 'c' + id : 'h' + k + '_' + i;
         let spot = sp[i];
-        if (reveal) spot = atSeat(k, n, (i - .5) * .095, TY + .002, .3);
+        if (reveal) spot = atSeat(k, n, (i - .5) * .095, TY + .002, .34);
         else if (folded || (V.ph === 'show' && V.folded[k])) spot = { x: deck.x - .02, y: TY + .012 + i * .001, z: deck.z + .02, rz: Math.PI, ry: .9 };
         items.push(Object.assign({ key, id, from: deck }, spot));
       });
@@ -3332,7 +3333,7 @@ const Poker = (() => {
     const inPot = V.put.reduce((s, v, k) => s + v - V.bet[k], 0);
     if (inPot > 0) { const p = { x: Math.sin(va) * -.15 + Math.cos(va) * -.32, z: Math.cos(va) * -.15 - Math.sin(va) * -.32 }; chipStack(inPot, p, va); }
     m.chips.end();
-    const dp = atSeat(V.dealer, n, -.24, 0, .3);
+    const dp = atSeat(V.dealer, n, V.dealer === 0 && n > 2 ? .24 : -.24, 0, .3);   // seat 0's left is where the deck sits
     if (!m.btnPos) m.btnPos = { x: dp.x, z: dp.z };
     const kk = lerpK(dt, 6); m.btnPos.x += (dp.x - m.btnPos.x) * kk; m.btnPos.z += (dp.z - m.btnPos.z) * kk;
     m.dealerBtn.position.set(m.btnPos.x, TY + .0045, m.btnPos.z); m.dealerBtn.rotation.y = va;
