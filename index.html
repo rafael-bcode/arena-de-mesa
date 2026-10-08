@@ -93,7 +93,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--gold);outline-o
 .join{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .nick{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:center}
 .nick label{color:var(--dim);font-size:13px}
-#inviteNick{font:600 16px var(--ui);padding:10px 12px;border-radius:6px;border:1px solid var(--line);background:#0e1018;color:var(--ink);width:100%;box-sizing:border-box;text-align:center}
+.wordIn,#inviteNick{font:600 16px var(--ui);padding:10px 12px;border-radius:6px;border:1px solid var(--line);background:#0e1018;color:var(--ink);width:100%;box-sizing:border-box;text-align:center}
 #nickIn{font:600 15px var(--ui);padding:9px 10px;border-radius:6px;border:1px solid var(--line);background:#0e1018;color:var(--ink);min-width:0}
 .join label{color:var(--dim);font-size:13px}
 input.code{font:700 18px var(--ui);letter-spacing:.38em;text-transform:uppercase;text-align:center;width:8.5ch;padding:10px 6px;border-radius:6px;border:1px solid var(--line);background:#0e1018;color:var(--ink)}
@@ -363,7 +363,7 @@ input.code{font:700 18px var(--ui);letter-spacing:.38em;text-transform:uppercase
       </button>
       <button class="card" data-game="forca" style="--acc:#e2bd6a" aria-pressed="false">
         <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M8 41h18M14 41V7h17v6"/><path d="M14 14l7-7"/><circle cx="31" cy="17" r="4"/><path d="M31 21v9M31 24l-4 4M31 24l4 4M31 30l-3 6M31 30l3 6"/></svg>
-        <b>Forca</b><small>Os dois na mesma palavra: acertou, pontua e joga de novo. 5 palavras.</small>
+        <b>Forca</b><small>Um escolhe a palavra secreta, o outro adivinha letra por letra. Contra a CPU, você adivinha.</small>
       </button>
       </div>
     </section>
@@ -428,6 +428,20 @@ input.code{font:700 18px var(--ui);letter-spacing:.38em;text-transform:uppercase
     <p id="msgText"></p>
     <button class="btn ghost" id="btnMsgBack">Voltar aos jogos</button>
   </div>
+</div>
+
+<!-- Forca: the player whose turn it is to choose writes the secret word -->
+<div class="ov dlg" id="wordBox" hidden>
+  <form class="box" id="wordForm" autocomplete="off">
+    <p class="eyebrow">FORCA · SUA VEZ DE ESCOLHER</p>
+    <h2>Palavra secreta</h2>
+    <p id="wordFor"></p>
+    <input id="wordIn" class="wordIn" maxlength="18" placeholder="Ex.: ABACAXI" spellcheck="false" autocapitalize="characters" aria-label="Palavra secreta">
+    <input id="hintIn" class="wordIn" maxlength="28" placeholder="Dica (opcional), ex.: fruta" spellcheck="false" aria-label="Dica">
+    <p class="err" id="wordErr" hidden></p>
+    <button class="btn pink" type="submit">Usar esta palavra</button>
+    <button class="btn ghost" type="button" id="btnWordRandom">Sortear uma para mim</button>
+  </form>
 </div>
 
 <!-- Opened from a room link: pick a name before joining -->
@@ -5574,10 +5588,10 @@ const Jokenpo = (() => {
 })();
 
 // ======================================================================
-// GAME 22: FORCA (1x1 na mesma palavra: acertou, pontua e joga de novo)
+// GAME 22: FORCA (clássica: um escolhe a palavra, o outro adivinha; online os papéis trocam a cada rodada)
 // ======================================================================
 const Forca = (() => {
-  const ROUNDS = 5, MAXMISS = 6, BONUS = 3, SP = .066, TZ = .1;
+  const WIN = 3, MAXMISS = 6, SP = .066, TZ = .1;
   const WORDS = {
     'Frutas': 'ABACAXI BANANA MORANGO MELANCIA JABUTICABA MARACUJÁ GOIABA AÇAÍ LARANJA PITANGA CAJU TANGERINA',
     'Animais': 'JACARÉ TAMANDUÁ CAPIVARA ELEFANTE GIRAFA PINGUIM TUCANO ONÇA PREGUIÇA CAMALEÃO ARARA GOLFINHO',
@@ -5600,75 +5614,107 @@ const Forca = (() => {
   const isLetter = ch => /^[A-Z]$/.test(base(ch));
   const FREQ = 'AEOSRINDMUTCLPVGHQBFZJXKWY';
   const g = { id: 'forca', multi: true, seats: [2], fixedCam: true, letters: true, realtime: false, planeY: 0, fxY: 0, halfW: .6, cam: { h: .56, d: 1.22, lz: -.1, ly: .17 },
-    help: 'Escolha letras no teclado da tela ou no seu teclado · cada letra certa vale 1 ponto por vez que aparece e você joga de novo · quem completar a palavra ganha +3 · 6 erros e ninguém leva o bônus · 5 palavras.' };
+    help: 'Um escolhe a palavra secreta e o outro adivinha, letra por letra · cada erro desenha uma parte do boneco · descobriu antes de 6 erros, o ponto é de quem adivinhou; enforcou, é de quem escolheu · 3 pontos vence.' };
   let m = {};
-  const maskOf = V => V.word != null ? [...V.word].map(ch => !isLetter(ch) || V.ph === 'end' || V.used.includes(base(ch)) ? ch : '_').join('') : V.mask;
-  function pickWord(S) {
+  // a word typed by a player: letters (accents and ç too), spaces and hyphens
+  g.checkWord = w => !/^[A-ZÁÀÂÃÉÊÍÓÔÕÚÜÇ -]*$/.test(w) ? 'Use só letras (acentos valem), espaço ou hífen.'
+    : [...w].filter(isLetter).length < 3 ? 'A palavra precisa ter pelo menos 3 letras.' : w.length > 18 ? 'No máximo 18 caracteres.' : '';
+  const cleanWord = v => { const w = String(v == null ? '' : v).toUpperCase().replace(/\s+/g, ' ').trim(); return g.checkWord(w) ? '' : w; };
+  const cleanHint = v => String(v == null ? '' : v).replace(/[\u0000-\u001f<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, 28);
+  const maskOf = V => V.word ? [...V.word].map(ch => !isLetter(ch) || V.ph === 'end' || V.used.includes(base(ch)) ? ch : '_').join('') : (V.mask || '');
+  function randomWord(S) {
     for (let t = 0; t < 50; t++) {
       const c = Math.floor(Math.random() * CATS.length), i = Math.floor(Math.random() * LIST[c].length), id = c * 100 + i;
       if (S.seen.includes(id) && t < 49) continue;
-      S.seen.push(id); S.cat = c; S.word = LIST[c][i]; return;
+      S.seen.push(id); S.cat = c; S.word = LIST[c][i]; S.hint = CATS[c]; return;
     }
   }
-  g.init = () => { const f = Math.random() < .5 ? 0 : 1, S = { n: 2, word: '', cat: 0, seen: [], used: '', miss: 0, sc: [0, 0], rd: 1, turn: f, starter: f, ph: 'play', tm: 0, last: null, done: -2, tn: 0, mid: rid(), win: null }; pickWord(S); return S; };
-  function nextWord(S) {
-    const [a, b] = S.sc;
-    if (S.rd >= ROUNDS && a !== b) { S.win = a > b ? 0 : 1; return; }   // tied after 5: one more word
-    S.rd++; S.starter = 1 - S.starter; S.turn = S.starter; pickWord(S);
-    S.used = ''; S.miss = 0; S.last = null; S.done = -2; S.ph = 'play'; S.tm = 0; S.tn++;
+  // against the CPU it always picks the word and the person guesses; two people take turns
+  function chooseSetter(prev) {
+    const cpu = [0, 1].filter(k => seatKind(k) === 'cpu');
+    if (cpu.length === 1) return cpu[0];
+    return prev < 0 ? (Math.random() < .5 ? 0 : 1) : 1 - prev;
+  }
+  g.init = () => ({ n: 2, word: '', hint: '', cat: -1, seen: [], setter: -1, used: '', miss: 0, sc: [0, 0], rd: 1, ph: 'set', tm: 0, last: null, done: -2, tn: 0, mid: rid(), win: null });
+  function nextRound(S) {
+    if (S.sc[S.done] >= WIN) { S.win = S.done; return; }
+    S.rd++; S.setter = chooseSetter(S.setter);
+    S.word = ''; S.hint = ''; S.cat = -1; S.used = ''; S.miss = 0; S.last = null; S.done = -2; S.ph = 'set'; S.tm = 0; S.tn++;
   }
   g.step = (S, dt, ins) => {
     if (S.win != null) return;
     S.tm += dt;
-    if (S.ph === 'end') { if (S.tm > 3.4) nextWord(S); return; }
-    const k = S.turn, a = ins[k] && ins[k].guess;
-    if (!Array.isArray(a) || a[0] !== S.mid || a[1] !== S.tn || S.tm < .3) return;
+    if (S.setter < 0) { S.setter = chooseSetter(-1); S.tn++; }
+    const gs = 1 - S.setter;
+    if (S.ph === 'set') {   // a typed word, or an empty one = draw one from the list
+      const a = ins[S.setter] && ins[S.setter].word;
+      if (Array.isArray(a) && a[0] === S.mid && a[1] === S.rd) {
+        const w = cleanWord(a[2]);
+        if (w) { S.word = w; S.hint = cleanHint(a[3]); S.cat = -1; } else randomWord(S);
+        S.ph = 'play'; S.tm = 0; S.tn++; ev(S, 'tile', 0, TZ, 1, S.setter);
+      }
+      return;
+    }
+    if (S.ph === 'end') { if (S.tm > 3.6) nextRound(S); return; }
+    const a = ins[gs] && ins[gs].guess;
+    if (!Array.isArray(a) || a[0] !== S.mid || a[1] !== S.tn || S.tm < .25) return;
     const l = String(a[2] || '').toUpperCase();
     if (!/^[A-Z]$/.test(l) || S.used.includes(l)) return;
     S.used += l; S.tm = 0; S.tn++;
     const n = [...S.word].filter(ch => base(ch) === l).length;
-    S.last = { k, l, n };
+    S.last = { l, n };
     if (n) {
-      S.sc[k] += n; ev(S, 'tile', 0, TZ, 1, k);
-      if (!maskOf(S).includes('_')) { S.sc[k] += BONUS; S.done = k; S.ph = 'end'; ev(S, 'goal', 0, TZ, 1, k); }
+      ev(S, 'tile', 0, TZ, 1, gs);
+      if (!maskOf(S).includes('_')) { S.done = gs; S.sc[gs]++; S.ph = 'end'; ev(S, 'goal', 0, TZ, 1, gs); }
     } else {
-      S.miss++; S.turn = 1 - k; ev(S, 'capture', 0, -.3, 1, k);
-      if (S.miss >= MAXMISS) { S.done = -1; S.ph = 'end'; }
+      S.miss++; ev(S, 'capture', 0, -.3, 1, S.setter);
+      if (S.miss >= MAXMISS) { S.done = S.setter; S.sc[S.setter]++; S.ph = 'end'; }
     }
   };
-  // ---- CPU: easy guesses loosely, normal goes by letter frequency, hard matches the pattern against the category ----
+  // ---- CPU: picks the word; as a guesser (the menu's demo) it goes by letter frequency and the category's words ----
   function cpuGuess(S) {
     const free = FREQ.split('').filter(l => !S.used.includes(l));
     if (!free.length) return null;
-    if (diff === 0) return free[Math.floor(Math.random() * Math.min(free.length, Math.random() < .5 ? 26 : 7))];
-    if (diff === 1 && Math.random() < .65) return free[Math.random() < .8 ? 0 : Math.min(1, free.length - 1)];
-    const mask = [...maskOf(S)].map(base), cands = LIST[S.cat].map(w => [...w].map(base)).filter(w => w.length === mask.length && w.every((ch, i) => mask[i] === '_' ? !S.used.includes(ch) && !mask.includes(ch) : ch === mask[i]));
-    if (!cands.length || (diff === 1 && Math.random() < .5) || Math.random() < .12) return free[0];
+    if (diff === 0 && Math.random() < .5) return free[Math.floor(Math.random() * free.length)];
+    const mask = [...maskOf(S)].map(base), pool = S.cat >= 0 ? LIST[S.cat] : [];
+    const cands = pool.map(w => [...w].map(base)).filter(w => w.length === mask.length && w.every((ch, i) => mask[i] === '_' ? !S.used.includes(ch) && !mask.includes(ch) : ch === mask[i]));
+    if (!cands.length || diff === 0 || Math.random() < (diff === 1 ? .5 : .15)) return free[0];
     const cnt = {}; cands.forEach(w => new Set(w.filter((ch, i) => mask[i] === '_')).forEach(ch => { cnt[ch] = (cnt[ch] || 0) + 1; }));
     return free.slice().sort((x, y) => (cnt[y] || 0) - (cnt[x] || 0))[0];
   }
   g.cpu = (S, side, dt, mem) => {
-    if (S.ph !== 'play') return {};
-    const l = cpuPlan(S, side, dt, mem, () => cpuGuess(S), .8);
-    return l ? { guess: [S.mid, S.tn, l] } : {};
+    if (S.win != null || S.setter < 0) return {};
+    if (mem.tn !== S.tn || mem.mid !== S.mid) { mem.tn = S.tn; mem.mid = S.mid; mem.t = 0; mem.l = null; }
+    mem.t += dt;
+    if (S.ph === 'set') return side === S.setter && mem.t > .9 ? { word: [S.mid, S.rd, '', ''] } : {};
+    if (S.ph !== 'play' || side === S.setter || mem.t < .8) return {};
+    if (!mem.l) mem.l = cpuGuess(S);
+    return mem.l ? { guess: [S.mid, S.tn, mem.l] } : {};
   };
   g.local = (V, side) => {
     if (ctl.tn !== V.tn || ctl.mid !== V.mid) { ctl.tn = V.tn; ctl.mid = V.mid; ctl.g = null; }
     const act = ctl.act; ctl.act = null;
+    if (V.ph === 'set') {
+      const r = ctl.req;
+      return { word: V.setter === side && r && r.mid === V.mid && r.rd === V.rd ? [V.mid, V.rd, r.w, r.h] : null };
+    }
     const l = act && /^k[A-Z]$/.test(act) ? act[1] : letterPressed;
     if (l && V.ph === 'play' && V.win == null && !ctl.g) {
-      if (V.turn !== side) toast('Espere a sua vez.');
+      if (V.setter === side) toast('Você escolheu a palavra: agora é a vez do outro adivinhar.');
       else if (V.used.includes(l)) toast('A letra ' + l + ' já foi.');
       else ctl.g = [V.mid, V.tn, l];
     }
     return { guess: ctl.g };
   };
-  g.pack = S => ({ n: 2, mask: maskOf(S), cat: S.cat, used: S.used, miss: S.miss, sc: S.sc, rd: S.rd, turn: S.turn, starter: S.starter, ph: S.ph, tm: r3(S.tm), last: S.last, done: S.done, tn: S.tn, mid: S.mid, win: S.win });
+  // only the one who chose it receives the word before the round ends
+  g.pack = (S, seat) => ({ n: 2, word: seat === S.setter || S.ph === 'end' ? S.word : '', mask: maskOf(S), hint: S.hint, setter: S.setter, used: S.used, miss: S.miss, sc: S.sc, rd: S.rd, ph: S.ph,
+    tm: r3(S.tm), last: S.last, done: S.done, tn: S.tn, mid: S.mid, win: S.win });
   g.unpack = d => {
     const L = d.last && typeof d.last === 'object' ? d.last : null;
-    return { n: 2, mask: String(d.mask || '').slice(0, 24).replace(/[^A-ZÀ-Ý_ -]/g, '_'), cat: sanInt(d.cat, 0, CATS.length - 1, 0), used: String(d.used || '').replace(/[^A-Z]/g, '').slice(0, 26), miss: sanInt(d.miss, 0, MAXMISS, 0),
-      sc: A(d.sc, 2).map(v => sanInt(v, 0, 999, 0)), rd: num(d.rd, 1), turn: d.turn === 1 ? 1 : 0, starter: d.starter === 1 ? 1 : 0, ph: d.ph === 'end' ? 'end' : 'play', tm: num(d.tm, 0),
-      last: L ? { k: L.k === 1 ? 1 : 0, l: /^[A-Z]$/.test(L.l) ? L.l : '?', n: sanInt(L.n, 0, 24, 0) } : null, done: sanInt(d.done, -2, 1, -2), tn: num(d.tn, 0), mid: d.mid, win: d.win === 0 || d.win === 1 ? d.win : null };
+    return { n: 2, word: cleanWord(d.word), mask: String(d.mask || '').slice(0, 18).replace(/[^A-ZÁÀÂÃÉÊÍÓÔÕÚÜÇ_ -]/g, '_'), hint: cleanHint(d.hint), setter: sanInt(d.setter, -1, 1, -1),
+      used: String(d.used || '').replace(/[^A-Z]/g, '').slice(0, 26), miss: sanInt(d.miss, 0, MAXMISS, 0), sc: A(d.sc, 2).map(v => sanInt(v, 0, 99, 0)), rd: num(d.rd, 1),
+      ph: ['set', 'play', 'end'].includes(d.ph) ? d.ph : 'set', tm: num(d.tm, 0), last: L ? { l: /^[A-Z]$/.test(L.l) ? L.l : '?', n: sanInt(L.n, 0, 18, 0) } : null,
+      done: sanInt(d.done, -2, 1, -2), tn: num(d.tn, 0), mid: d.mid, win: d.win === 0 || d.win === 1 ? d.win : null };
   };
   // ---- table: a wooden gallows behind a rack of letter tiles ----
   const GH = .4, GX = -.02, GZ = -.3;
@@ -5710,30 +5756,32 @@ const Forca = (() => {
       })
     };
   };
-  g.render = (V, dt) => {
-    const mask = maskOf(V), items = [], n = mask.length, k = lerpK(dt, 9);
+  g.render = (V, dt, o) => {
+    const me = o.local ? o.side : null, mask = maskOf(V), items = [], n = mask.length, k = lerpK(dt, 9);
+    const peek = me != null && me === V.setter && V.word ? V.word : null;   // whoever chose the word sees it, still-hidden letters greyed
     [...mask].forEach((ch, i) => {
       if (ch === ' ') return;
-      const x = (i - (n - 1) / 2) * SP, open = ch !== '_', key = 'w' + V.mid + '_' + V.rd + '_' + i;
+      const x = (i - (n - 1) / 2) * SP, found = ch !== '_', show = found || !!peek, key = 'w' + V.mid + '_' + V.rd + '_' + i;
       // hidden tiles stand turned away (blank back toward the players), and turn round once their letter is found
-      items.push({ key, x, y: .02, z: TZ, ry: open ? 0 : Math.PI, from: { x, y: .3, z: TZ, ry: Math.PI } });
+      items.push({ key, x, y: .02, z: TZ, ry: show ? 0 : Math.PI, from: { x, y: .3, z: TZ, ry: Math.PI } });
       const ob = m.objs[key];
-      if (ob && open) {
-        const fm = ob.userData.face.material, tex = m.glyph(ch);
+      if (ob && show) {
+        const fm = ob.userData.face.material, tex = m.glyph(found ? ch : peek[i]);
         if (fm.map !== tex) { fm.map = tex; fm.needsUpdate = true; }
-        const missed = V.ph === 'end' && V.done === -1 && !V.used.includes(base(ch));   // the letters nobody found
+        fm.color.set(found ? '#ffffff' : '#8a8a8a');
+        const missed = V.ph === 'end' && V.done === V.setter && !V.used.includes(base(ch));   // the letters nobody found
         fm.emissiveIntensity += ((missed ? .35 : 0) - fm.emissiveIntensity) * k;
       }
     });
     m.tiles.frame(items, dt, .04);
-    m.rack.scale.x += (Math.max(.2, n * SP + .04) - m.rack.scale.x) * k;
+    m.rack.scale.x += (Math.max(.3, n * SP + .04) - m.rack.scale.x) * k;
     m.parts.forEach((p, i) => { const s = i < V.miss ? 1 : .001; p.scale.setScalar(p.scale.x + (s - p.scale.x) * lerpK(dt, 12)); });
-    m.skin.emissiveIntensity += ((V.ph === 'end' && V.done === -1 ? .5 : 0) - m.skin.emissiveIntensity) * k;
+    m.skin.emissiveIntensity += ((V.ph === 'end' && V.done === V.setter ? .5 : 0) - m.skin.emissiveIntensity) * k;
     return null;
   };
   let kbdKey = '';
   function syncKbd(V, vs) {
-    const mask = maskOf(V), hits = new Set([...mask].filter(isLetter).map(base)), my = vs != null && V.turn === vs && V.ph === 'play' && V.win == null;
+    const mask = maskOf(V), hits = new Set([...mask].filter(isLetter).map(base)), my = vs === 1 - V.setter && V.ph === 'play' && V.win == null;
     const key = V.used + '|' + [...hits].join('') + '|' + my;
     if (key === kbdKey) return; kbdKey = key;
     $('kbd').classList.toggle('wait', !my);
@@ -5742,22 +5790,33 @@ const Forca = (() => {
       b.disabled = used || !my; b.className = used ? (hits.has(l) ? 'hit' : 'miss') : '';
     });
   }
+  function syncWordBox(V, vs, nm) {
+    const box = $('wordBox'), r = ctl.req, want = vs != null && V.ph === 'set' && V.setter === vs && V.win == null && !(r && r.mid === V.mid && r.rd === V.rd);
+    if (want && box.hidden) {
+      box.hidden = false; box.dataset.mid = V.mid; box.dataset.rd = V.rd;
+      $('wordIn').value = ''; $('hintIn').value = ''; $('wordErr').hidden = true;
+      $('wordFor').textContent = nm[1 - vs] + ' vai tentar adivinhar. Escreva só com letras (acentos valem).';
+      setTimeout(() => $('wordIn').focus(), 30);
+    } else if (!want && !box.hidden) box.hidden = true;
+  }
   g.hud = (V, vs) => {
-    const nm = names(vs), L = V.last;
-    $('kbd').hidden = vs == null || V.win != null; if (!$('kbd').hidden) syncKbd(V, vs);
-    const head = 'Palavra ' + V.rd + (V.rd > ROUNDS ? ' (desempate)' : ' de ' + ROUNDS) + ' · ' + CATS[V.cat] + ' · erros ' + V.miss + '/' + MAXMISS;
+    const nm = names(vs), gs = 1 - V.setter, L = V.last, youSet = vs != null && vs === V.setter, youGuess = vs != null && vs === gs;
+    syncWordBox(V, vs, nm);
+    $('kbd').hidden = vs == null || V.ph !== 'play' || V.win != null; if (!$('kbd').hidden) syncKbd(V, vs);
+    if (V.setter < 0) return { sc: V.sc, line: 'Preparando a rodada…' };
     let line;
-    if (V.ph === 'end') line = V.done >= 0 ? (vs === V.done ? 'Você completou' : nm[V.done] + ' completou') + ' a palavra: +' + BONUS + '!' : 'Enforcado! Ninguém leva o bônus';
+    if (V.ph === 'set') line = 'Rodada ' + V.rd + ' · ' + (youSet ? 'Escolha a palavra secreta para ' + nm[gs] + ' adivinhar' : nm[V.setter] + ' está escolhendo a palavra…');
+    else if (V.ph === 'end') line = V.done === gs ? (youGuess ? 'Você descobriu a palavra! Ponto seu' : nm[gs] + ' descobriu a palavra! Ponto de ' + nm[gs])
+      : 'Enforcado! ' + (youSet ? 'Ponto seu' : 'Ponto de ' + nm[V.setter]);
     else {
-      const who = L ? (vs === L.k ? 'Você' : nm[L.k]) : '';
-      const prev = L ? who + (L.n ? ' acertou o ' + L.l + (L.n > 1 ? ' (' + L.n + ' vezes)' : '') : ' errou o ' + L.l) + ' · ' : '';
-      line = prev + (vs != null && V.turn === vs ? 'Sua vez: escolha uma letra' : 'Vez de ' + nm[V.turn]);
+      const prev = L ? (L.n ? 'Tem ' + L.l + (L.n > 1 ? ' (' + L.n + ' vezes)' : '') + '!' : 'Não tem ' + L.l) + ' · ' : '';
+      line = (V.hint ? 'Dica: ' + V.hint + ' · ' : '') + 'erros ' + V.miss + ' de ' + MAXMISS + ' · ' + prev + (youGuess ? 'escolha uma letra' : nm[gs] + ' está adivinhando');
     }
-    return { sc: V.sc, line: head + ' — ' + line };
+    return { sc: V.sc, line };
   };
   g.winner = V => V.win;
   g.result = (V, vs) => Object.assign(winTitle(V, vs, V.win, false), { score: V.sc[0] + ' : ' + V.sc[1] });
-  g.overText = () => 'Fez mais pontos nas ' + ROUNDS + ' palavras.';
+  g.overText = () => 'Fez ' + WIN + ' pontos primeiro.';
   return g;
 })();
 
@@ -5907,7 +5966,7 @@ function updateHud(view, el) {
   if (showP) $('pfill').style.width = Math.round(h.power * 100) + '%';
 }
 function showGameUi(on) {
-  if (!on) { $('acts').hidden = true; $('kbd').hidden = true; hudCache.acts = ''; hudCache.bm = ''; canvas.style.cursor = ''; }
+  if (!on) { $('acts').hidden = true; $('kbd').hidden = true; $('wordBox').hidden = true; hudCache.acts = ''; hudCache.bm = ''; canvas.style.cursor = ''; }
   $('hud').hidden = !on; $('help').hidden = !on; if (!on) { $('power').hidden = true; setText('big', ''); }
   $('chat').hidden = !(on && room && (mode === 'host' || mode === 'guest'));
 }
@@ -6280,6 +6339,15 @@ $('acts').addEventListener('click', e => { const b = e.target.closest('button');
   const kb = $('kbd');
   for (const row of ['QWERTYUIOP', 'ASDFGHJKL', 'ZXCVBNM']) { const r = document.createElement('div'); for (const l of row) { const b = document.createElement('button'); b.dataset.k = l; b.textContent = l; r.append(b); } kb.append(r); }
   kb.addEventListener('click', e => { const b = e.target.closest('button'); if (b && !b.disabled) { initAudio(); ctl.act = 'k' + b.dataset.k; } });
+  const box = $('wordBox'), take = (w, h) => { ctl.req = { mid: +box.dataset.mid, rd: +box.dataset.rd, w, h }; box.hidden = true; canvas.focus(); };
+  $('wordIn').addEventListener('input', e => { e.target.value = e.target.value.toUpperCase(); $('wordErr').hidden = true; });
+  $('wordForm').addEventListener('submit', e => {
+    e.preventDefault(); initAudio();
+    const w = $('wordIn').value.toUpperCase().replace(/\s+/g, ' ').trim(), err = Forca.checkWord(w);
+    if (err) { $('wordErr').textContent = err; $('wordErr').hidden = false; return; }
+    take(w, $('hintIn').value);
+  });
+  $('btnWordRandom').onclick = () => { initAudio(); take('', ''); };
 }
 function syncHq() { const b = $('btnHq'); b.setAttribute('aria-pressed', String(hq)); b.textContent = 'Gráficos: ' + (hq ? 'alto' : 'leve'); }
 $('btnHq').onclick = () => {
