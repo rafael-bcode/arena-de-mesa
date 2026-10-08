@@ -143,6 +143,16 @@ input.code{font:700 18px var(--ui);letter-spacing:.38em;text-transform:uppercase
 .pbar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--a),var(--gold),var(--b))}
 #acts{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(46px + env(safe-area-inset-bottom,0px));z-index:3;display:flex;gap:8px;flex-wrap:wrap;justify-content:center;width:max-content;max-width:calc(100vw - 32px)}
 #acts .btn{box-shadow:0 10px 30px -12px var(--a)}
+#kbd{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(40px + env(safe-area-inset-bottom,0px));z-index:3;display:flex;flex-direction:column;gap:5px;align-items:center}
+#kbd[hidden]{display:none}
+#kbd div{display:flex;gap:5px}
+#kbd button{all:unset;cursor:pointer;width:34px;height:36px;display:grid;place-items:center;border-radius:6px;background:rgba(16,18,28,.94);border:1px solid var(--line);color:var(--ink);font:700 15px var(--ui)}
+#kbd button:hover:not(:disabled){border-color:var(--gold);color:var(--gold)}
+#kbd button:focus-visible{outline:2px solid var(--gold)}
+#kbd button:disabled{cursor:default}
+#kbd button.hit{background:#1d4d36;color:#bff2d8;border-color:#2f7a55}
+#kbd button.miss{background:#3a1820;color:#ff8fa3;border-color:#5a2632;opacity:.65}
+#kbd.wait button:not(.hit):not(.miss){opacity:.45}
 #help{position:fixed;left:0;right:0;bottom:0;padding:0 16px calc(12px + env(safe-area-inset-bottom,0px));text-align:center;color:var(--dim);font-size:12.5px;pointer-events:none;z-index:2}
 /* ---- chat (online only) ---- */
 #chat{position:fixed;left:16px;bottom:calc(44px + env(safe-area-inset-bottom,0px));z-index:4;display:flex;flex-direction:column-reverse;align-items:flex-start;gap:8px;max-width:calc(100vw - 32px)}
@@ -180,7 +190,7 @@ input.code{font:700 18px var(--ui);letter-spacing:.38em;text-transform:uppercase
   input.code{font-size:16px;padding:9px 6px}
 }
 @media (prefers-reduced-motion:reduce){.pulse{animation:none}.card{transition:none}}
-@media (max-width:560px){.team b{display:none}.net span{display:none}#chat{bottom:calc(78px + env(safe-area-inset-bottom,0px))}#acts{bottom:calc(84px + env(safe-area-inset-bottom,0px))}}
+@media (max-width:560px){#kbd{bottom:calc(78px + env(safe-area-inset-bottom,0px))}#kbd button{width:28px;height:34px;font-size:14px}#kbd div{gap:4px}.team b{display:none}.net span{display:none}#chat{bottom:calc(78px + env(safe-area-inset-bottom,0px))}#acts{bottom:calc(84px + env(safe-area-inset-bottom,0px))}}
 </style>
 </head>
 <body>
@@ -209,6 +219,7 @@ input.code{font:700 18px var(--ui);letter-spacing:.38em;text-transform:uppercase
 <div id="big"></div>
 <div id="power" hidden><div class="pbar"><i id="pfill"></i></div><span>Força</span></div>
 <div id="acts" hidden></div>
+<div id="kbd" hidden aria-label="Letras"></div>
 <div id="help" hidden></div>
 <div id="chat" hidden>
   <button class="chip" id="btnChat" aria-expanded="false" aria-controls="chatPanel">Chat<b id="chatBadge" hidden>0</b></button>
@@ -235,6 +246,7 @@ input.code{font:700 18px var(--ui);letter-spacing:.38em;text-transform:uppercase
       <button data-cat="tabuleiro" aria-pressed="false">Tabuleiro <i>5</i></button>
       <button data-cat="baralho" aria-pressed="false">Baralho <i>4</i></button>
       <button data-cat="cassino" aria-pressed="false">Cassino <i>3</i></button>
+      <button data-cat="rapidos" aria-pressed="false">Rápidos <i>3</i></button>
     </div>
     <div id="cards">
     <section class="cat" data-cat="real">
@@ -335,6 +347,23 @@ input.code{font:700 18px var(--ui);letter-spacing:.38em;text-transform:uppercase
       <button class="card" data-game="roleta" style="--acc:#e2bd6a" aria-pressed="false">
         <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"><circle cx="24" cy="24" r="17"/><circle cx="24" cy="24" r="10"/><circle cx="24" cy="24" r="3"/><path d="M24 7v7M24 34v7M7 24h7M34 24h7"/><circle cx="33" cy="14" r="2"/></svg>
         <b>Roleta</b><small>Europeia, de 1 a 6 jogadores, com fichas fictícias. Número paga 35 vezes.</small>
+      </button>
+      </div>
+    </section>
+    <section class="cat" data-cat="rapidos">
+      <h2>Rápidos<small>Partidas curtas, regras que todo mundo conhece</small></h2>
+      <div class="cards">
+      <button class="card" data-game="velha" style="--acc:#38b6ff" aria-pressed="false">
+        <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 7v34M30 7v34M7 18h34M7 30h34"/><path d="M9 9l6 6M15 9l-6 6"/><circle cx="36" cy="36" r="3.6"/><circle cx="24" cy="24" r="3.6"/></svg>
+        <b>Jogo da velha</b><small>Três em linha no tabuleiro de madeira. A CPU difícil nunca perde.</small>
+      </button>
+      <button class="card" data-game="ppt" style="--acc:#ff4f6d" aria-pressed="false">
+        <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 30l4-9 8-3 6 4 1 8-6 5H10z"/><path d="M28 8h11l3 3v15H28z"/><circle cx="31" cy="40" r="3.5"/><circle cx="41" cy="40" r="3.5"/><path d="M33 37l8-9M39 37l-8-9"/></svg>
+        <b>Pedra, papel e tesoura</b><small>Jokenpô! Escolha em segredo e revela junto. Quem fizer 3 pontos vence.</small>
+      </button>
+      <button class="card" data-game="forca" style="--acc:#e2bd6a" aria-pressed="false">
+        <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M8 41h18M14 41V7h17v6"/><path d="M14 14l7-7"/><circle cx="31" cy="17" r="4"/><path d="M31 21v9M31 24l-4 4M31 24l4 4M31 30l-3 6M31 30l3 6"/></svg>
+        <b>Forca</b><small>Os dois na mesma palavra: acertou, pontua e joga de novo. 5 palavras.</small>
       </button>
       </div>
     </section>
@@ -455,7 +484,7 @@ const A = (a, n, d = 0) => { const o = []; for (let i = 0; i < n; i++) o.push(nu
 const PHASE = v => ['count', 'play', 'over'].includes(v) ? v : 'count';
 const angDiff = d => Math.atan2(Math.sin(d), Math.cos(d));
 const COLS = ['#38b6ff', '#ff4f6d'];
-const GAME_NAMES = { pong: 'Ping-pong', toto: 'Totó', pool: 'Sinuca', botao: 'Futebol de botão', damas: 'Damas', xadrez: 'Xadrez', gamao: 'Gamão', oito: 'Oito Maluco', truco: 'Truco', poker: 'Poker', buraco: 'Buraco', vinte1: '21', airhockey: 'Air hockey', domino: 'Dominó', ludo: 'Ludo', roleta: 'Roleta', general: 'General', sueca: 'Sueca', naval: 'Batalha naval' };
+const GAME_NAMES = { pong: 'Ping-pong', toto: 'Totó', pool: 'Sinuca', botao: 'Futebol de botão', damas: 'Damas', xadrez: 'Xadrez', gamao: 'Gamão', oito: 'Oito Maluco', truco: 'Truco', poker: 'Poker', buraco: 'Buraco', vinte1: '21', airhockey: 'Air hockey', domino: 'Dominó', ludo: 'Ludo', roleta: 'Roleta', general: 'General', sueca: 'Sueca', naval: 'Batalha naval', velha: 'Jogo da velha', ppt: 'Pedra, papel e tesoura', forca: 'Forca' };
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 // CPU difficulty: 0 fácil, 1 normal, 2 difícil — each game's cpu() reads its knobs from here
 let diff = 1;
@@ -640,16 +669,22 @@ canvas.addEventListener('pointerdown', e => { if (e.button === 2 && G && G.id ==
 canvas.addEventListener('pointerup', e => { updPtr(e); ptr.released = true; });
 canvas.addEventListener('pointercancel', () => { ptr.released = true; });
 const digitPressed = {};
+let letterPressed = null;   // Forca: the letter typed this frame
 // ping-pong depth: Q/E and the mouse wheel nudge the paddle toward the net or back
 addEventListener('keydown', e => { if (e.target && e.target.tagName === 'INPUT') return; if (e.code === 'KeyQ') keys.qe = -1; if (e.code === 'KeyE') keys.qe = 1; if (e.code === 'KeyR' && !e.repeat && G && G.id === 'naval') rotPressed = true; });
 addEventListener('keyup', e => { if (e.code === 'KeyQ' || e.code === 'KeyE') keys.qe = 0; });
 canvas.addEventListener('wheel', e => { if (G && G.id === 'pong' && mode !== 'menu') { e.preventDefault(); ctl.q = clamp(num(ctl.q, 1.6) + e.deltaY * .0012, .2, 2.1); } }, { passive: false });
 addEventListener('keydown', e => { if (/^Digit[1-9]$/.test(e.code) && !(e.target && e.target.tagName === 'INPUT')) digitPressed[+e.code.slice(5)] = true; });
+addEventListener('keydown', e => {
+  if (!G || !G.letters || mode === 'menu' || e.ctrlKey || e.metaKey || e.altKey || (e.target && e.target.tagName === 'INPUT')) return;
+  const l = /^[a-zç]$/i.test(e.key) ? e.key.toUpperCase().replace('Ç', 'C') : '';
+  if (l) letterPressed = l;
+});
 const KEYS = { ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right', ArrowUp: 'up', KeyW: 'up', ArrowDown: 'down', KeyS: 'down', ShiftLeft: 'fine', ShiftRight: 'fine' };
 addEventListener('keydown', e => {
   if (e.target && e.target.tagName === 'INPUT') return;
   if (mode === 'menu') return;
-  if ((e.code === 'Escape' || e.code === 'KeyP') && !e.repeat) { togglePause(); return; }
+  if ((e.code === 'Escape' || (e.code === 'KeyP' && !G.letters)) && !e.repeat) { togglePause(); return; }
   if (KEYS[e.code]) { keys[KEYS[e.code]] = true; e.preventDefault(); }
   if (e.code === 'Space') { e.preventDefault(); if (!e.repeat) { initAudio(); ptr.pressed = true; ptr.kbd = true; } }
 });
@@ -5243,7 +5278,490 @@ const Naval = (() => {
   return g;
 })();
 
-const GAMES = { pong: Pong, toto: Toto, pool: Pool, botao: Botao, damas: Damas, xadrez: Xadrez, gamao: Gamao, oito: Oito, truco: Truco, poker: Poker, buraco: Buraco, vinte1: Vinte1, airhockey: AirHockey, domino: Domino, ludo: Ludo, roleta: Roleta, general: General, sueca: Sueca, naval: Naval };
+// ======================================================================
+// GAME 20: JOGO DA VELHA (1x1, quem fizer 3 rodadas)
+// ======================================================================
+const Velha = (() => {
+  const Q = .16, VB = .035, WIN = 3, LINES = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 3, 6], [1, 4, 7], [2, 5, 8], [0, 4, 8], [2, 4, 6]];
+  const g = { id: 'velha', multi: true, seats: [2], realtime: false, planeY: VB, fxY: VB, halfW: .4, cam: { h: 1.0, d: .78, lz: .02 },
+    help: 'Toque numa casa vazia (ou use as teclas 1 a 9) · três em linha, reta ou diagonal, ganha a rodada · quem fizer 3 rodadas vence.' };
+  let m = {};
+  const cellXZ = c => ({ x: (c % 3 - 1) * Q, z: (Math.floor(c / 3) - 1) * Q });
+  const lineOf = b => LINES.find(l => b[l[0]] >= 0 && b[l[0]] === b[l[1]] && b[l[1]] === b[l[2]]) || null;
+  const full = b => b.every(v => v >= 0);
+  g.init = () => { const f = Math.random() < .5 ? 0 : 1; return { n: 2, b: Array(9).fill(-1), turn: f, first: f, sc: [0, 0], rd: 1, ph: 'play', line: null, rw: -1, last: -1, tm: 0, tn: 0, mid: rid(), win: null }; };
+  g.step = (S, dt, ins) => {
+    if (S.win != null) return;
+    S.tm += dt;
+    if (S.ph === 'end') {   // a short pause to see the line, then a fresh board; the other player starts
+      if (S.tm > 2.2) { S.b = Array(9).fill(-1); S.first = 1 - S.first; S.turn = S.first; S.line = null; S.rw = -1; S.last = -1; S.rd++; S.ph = 'play'; S.tm = 0; S.tn++; }
+      return;
+    }
+    const k = S.turn, a = ins[k] && ins[k].mv;
+    if (!Array.isArray(a) || a[0] !== S.mid || a[1] !== S.tn || S.tm < .25) return;
+    const c = num(a[2], -1) | 0;
+    if (c < 0 || c > 8 || S.b[c] >= 0) return;
+    S.b[c] = k; S.last = c; S.tm = 0; S.tn++;
+    const p = cellXZ(c); ev(S, 'place', p.x, p.z, 1, k);
+    const l = lineOf(S.b);
+    if (l) { S.line = l; S.rw = k; S.sc[k]++; S.ph = 'end'; const q = cellXZ(l[1]); ev(S, 'goal', q.x, q.z, 1, k); if (S.sc[k] >= WIN) S.win = k; }
+    else if (full(S.b)) { S.rw = -1; S.ph = 'end'; ev(S, 'check', 0, 0); }
+    else S.turn = 1 - k;
+  };
+  // ---- CPU: easy slips, normal blocks, hard never loses (minimax, quickest win first) ----
+  function best(b, me) {
+    const score = (turn, depth) => {
+      const l = lineOf(b); if (l) return b[l[0]] === me ? 10 - depth : depth - 10;
+      if (full(b)) return 0;
+      let v = turn === me ? -99 : 99;
+      for (let i = 0; i < 9; i++) if (b[i] < 0) { b[i] = turn; const s = score(1 - turn, depth + 1); b[i] = -1; v = turn === me ? Math.max(v, s) : Math.min(v, s); }
+      return v;
+    };
+    let top = -99, picks = [];
+    for (let i = 0; i < 9; i++) if (b[i] < 0) { b[i] = me; const v = score(1 - me, 1); b[i] = -1; if (v > top) { top = v; picks = [i]; } else if (v === top) picks.push(i); }
+    return picks[Math.floor(Math.random() * picks.length)];
+  }
+  function cpuMove(S, side) {
+    const b = S.b.slice(), free = range(9).filter(i => b[i] < 0), any = () => free[Math.floor(Math.random() * free.length)];
+    if (free.length === 9) return [0, 2, 4, 6, 8][Math.floor(Math.random() * 5)];
+    const finish = who => free.find(i => { b[i] = who; const w = lineOf(b); b[i] = -1; return w; });
+    if (diff === 0) { const w = finish(side), bl = finish(1 - side); return w != null && Math.random() < .7 ? w : bl != null && Math.random() < .4 ? bl : any(); }
+    if (diff === 1) {
+      const w = finish(side); if (w != null) return w;
+      const bl = finish(1 - side); if (bl != null && Math.random() < .9) return bl;
+      return Math.random() < .55 ? best(b, side) : b[4] < 0 ? 4 : any();
+    }
+    return best(b, side);
+  }
+  g.cpu = (S, side, dt, mem) => {
+    if (S.ph !== 'play') return {};
+    const c = cpuPlan(S, side, dt, mem, () => cpuMove(S, side), .55);
+    return c == null ? {} : { mv: [S.mid, S.tn, c] };
+  };
+  function pickCell() {
+    if (!ptr.valid || Math.abs(ptr.x) > 1.5 * Q || Math.abs(ptr.z) > 1.5 * Q) return -1;
+    return (clamp(Math.round(ptr.z / Q), -1, 1) + 1) * 3 + clamp(Math.round(ptr.x / Q), -1, 1) + 1;
+  }
+  g.local = (V, side) => {
+    if (ctl.tn !== V.tn || ctl.mid !== V.mid) { ctl.tn = V.tn; ctl.mid = V.mid; ctl.mv = null; }
+    if (V.ph !== 'play' || V.turn !== side || V.win != null) return { mv: ctl.mv };
+    let c = -1;
+    if (ptr.pressed && !ptr.kbd) c = pickCell();
+    // 1-9 like a phone keypad, top row = the far row as this player sees the board
+    for (let d = 1; d <= 9; d++) if (digitPressed[d]) c = side === 0 ? d - 1 : 9 - d;
+    if (c >= 0 && V.b[c] < 0) ctl.mv = [V.mid, V.tn, c];
+    else if (c >= 0) { toast('Essa casa já está marcada.'); tone(220, .1, { type: 'triangle', vol: .06 }); }
+    return { mv: ctl.mv };
+  };
+  g.pack = S => ({ n: 2, b: S.b, turn: S.turn, first: S.first, sc: S.sc, rd: S.rd, ph: S.ph, line: S.line, rw: S.rw, last: S.last, tm: r3(S.tm), tn: S.tn, mid: S.mid, win: S.win });
+  g.unpack = d => ({ n: 2, b: A(d.b, 9, -1).map(v => sanInt(v, -1, 1, -1)), turn: d.turn === 1 ? 1 : 0, first: d.first === 1 ? 1 : 0, sc: A(d.sc, 2).map(v => sanInt(v, 0, 99, 0)),
+    rd: num(d.rd, 1), ph: d.ph === 'end' ? 'end' : 'play', line: Array.isArray(d.line) ? A(d.line, 3).map(v => sanInt(v, 0, 8, 0)) : null, rw: sanInt(d.rw, -1, 1, -1),
+    last: sanInt(d.last, -1, 8, -1), tm: num(d.tm, 0), tn: num(d.tn, 0), mid: d.mid, win: d.win === 0 || d.win === 1 ? d.win : null });
+  g.build = sc => {
+    buildTable(sc);
+    const W = 3 * Q + .08;
+    sc.add(box(W, VB, W, lacquer('#ffffff', .35, { map: woodTex('#c89a63', '#7a4f26') }), 0, VB / 2, 0));
+    sc.add(box(W + .02, .008, W + .02, mat('#3a2414', .6), 0, .004, 0));
+    const bar = lacquer('#3a2414', .4);
+    for (const s of [-.5, .5]) { sc.add(box(3 * Q - .02, .01, .012, bar, 0, VB + .005, s * Q)); sc.add(box(.012, .01, 3 * Q - .02, bar, s * Q, VB + .005, 0)); }
+    const xMat = lacquer(COLS[0], .25), oMat = lacquer(COLS[1], .25);
+    const glowMat = new THREE.MeshBasicMaterial({ color: '#ffc95c', transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending });
+    m = {
+      pieces: glideSet(sc, it => {
+        const gr = new THREE.Group();
+        if (it.who === 0) for (const r of [1, -1]) { const b = box(Q * .78, .022, .032, xMat, 0, .011, 0); b.rotation.y = r * Math.PI / 4; gr.add(b); }
+        else { const t = new THREE.Mesh(new THREE.TorusGeometry(Q * .27, .017, 16, 44), oMat); t.rotation.x = Math.PI / 2; t.position.y = .017; gr.add(t); }
+        return shadowAll(gr);
+      }),
+      bar: (() => { const b = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), glowMat); b.renderOrder = 4; sc.add(b); return b; })(),
+      hover: (() => { const r = new THREE.Mesh(new THREE.RingGeometry(.05, .06, 36), new THREE.MeshBasicMaterial({ color: '#ffc95c', transparent: true, opacity: 0, depthWrite: false })); r.rotation.x = -Math.PI / 2; sc.add(r); return r; })()
+    };
+  };
+  g.render = (V, dt, o) => {
+    const me = o.local ? o.side : null, items = [];
+    V.b.forEach((w, c) => { if (w < 0) return; const p = cellXZ(c); items.push({ key: 'p' + V.mid + '_' + V.rd + '_' + c, who: w, x: p.x, y: VB, z: p.z, from: { x: p.x, y: VB + .3, z: p.z, ry: 1.2 } }); });
+    m.pieces.frame(items, dt, .02);
+    // the winning line: a glowing bar across the three marks
+    if (V.line) {
+      const a = cellXZ(V.line[0]), b = cellXZ(V.line[2]), len = Math.hypot(b.x - a.x, b.z - a.z) + Q * .7;
+      m.bar.position.set((a.x + b.x) / 2, VB + .03, (a.z + b.z) / 2); m.bar.rotation.y = Math.atan2(-(b.z - a.z), b.x - a.x); m.bar.scale.set(len, .008, .016);
+      m.bar.material.color.set(COLS[V.rw] || '#ffc95c');
+    }
+    m.bar.material.opacity += ((V.line ? .8 + Math.sin(performance.now() / 160) * .2 : 0) - m.bar.material.opacity) * lerpK(dt, 10);
+    const c = me != null && V.ph === 'play' && V.turn === me && V.win == null ? pickCell() : -1, ok = c >= 0 && V.b[c] < 0;
+    if (ok) { const p = cellXZ(c); m.hover.position.set(p.x, VB + .002, p.z); m.hover.material.color.set(COLS[me]); }
+    m.hover.material.opacity += ((ok ? .9 : 0) - m.hover.material.opacity) * lerpK(dt, 14);
+    return null;
+  };
+  const mark = k => k === 0 ? 'X' : 'O';
+  g.hud = (V, vs) => {
+    const nm = names(vs);
+    let line;
+    if (V.ph === 'end') line = V.rw < 0 ? 'Deu velha! Ninguém pontua' : (vs === V.rw ? 'Você fez' : nm[V.rw] + ' fez') + ' três em linha!';
+    else line = 'Rodada ' + V.rd + ' · ' + (vs != null && V.turn === vs ? 'Sua vez (' + mark(vs) + ')' : 'Vez de ' + nm[V.turn] + ' (' + mark(V.turn) + ')');
+    return { sc: V.sc, line };
+  };
+  g.winner = V => V.win;
+  g.result = (V, vs) => Object.assign(winTitle(V, vs, V.win, false), { score: V.sc[0] + ' : ' + V.sc[1] });
+  g.overText = () => 'Fez 3 rodadas primeiro.';
+  return g;
+})();
+
+// ======================================================================
+// GAME 21: PEDRA, PAPEL E TESOURA (1x1, quem fizer 3 pontos)
+// ======================================================================
+const Jokenpo = (() => {
+  const WIN = 3, NAMES = ['Pedra', 'Papel', 'Tesoura'], VERB = ['quebra', 'embrulha', 'corta'], TWD = .14, THT = .18;
+  const g = { id: 'ppt', multi: true, seats: [2], realtime: false, planeY: TY, fxY: TY, halfW: .6, cam: { h: .92, d: .9, lz: .02 },
+    help: 'Escolha em segredo: clique numa peça, use os botões ou as teclas 1, 2 e 3 · pedra quebra tesoura, tesoura corta papel, papel embrulha pedra · quem fizer 3 pontos vence.' };
+  let m = {};
+  const beats = (a, b) => (a + 2) % 3 === b;
+  g.init = () => ({ n: 2, pick: [-1, -1], ph: 'pick', tm: 0, sc: [0, 0], rd: 1, res: -2, hist: [[], []], tn: 0, mid: rid(), win: null });
+  g.step = (S, dt, ins) => {
+    if (S.win != null) return;
+    S.tm += dt;
+    if (S.ph === 'pick') {
+      for (const k of [0, 1]) {
+        const a = ins[k] && ins[k].pick;
+        if (S.pick[k] < 0 && Array.isArray(a) && a[0] === S.mid && a[1] === S.rd) { const c = num(a[2], -1) | 0; if (c >= 0 && c <= 2) { S.pick[k] = c; S.tn++; ev(S, 'card', 0, sgnS(k) * .2, 1, k); } }
+      }
+      if (S.pick[0] >= 0 && S.pick[1] >= 0) { S.ph = 'count'; S.tm = 0; S.tn++; }
+    } else if (S.ph === 'count') {   // "Jo... ken... pô!" — then both tiles turn over together
+      if (S.tm >= 1.8) {
+        const [a, b] = S.pick; S.res = a === b ? -1 : beats(a, b) ? 0 : 1;
+        if (S.res >= 0) { S.sc[S.res]++; ev(S, 'goal', 0, sgnS(S.res) * .12, 1, S.res); } else ev(S, 'check', 0, 0);
+        S.hist[0].push(a); S.hist[1].push(b); if (S.hist[0].length > 30) { S.hist[0].shift(); S.hist[1].shift(); }
+        S.ph = 'show'; S.tm = 0; S.tn++;
+      }
+    } else if (S.ph === 'show' && S.tm >= 2.4) {
+      if (S.res >= 0 && S.sc[S.res] >= WIN) { S.win = S.res; return; }
+      S.pick = [-1, -1]; S.res = -2; S.rd++; S.ph = 'pick'; S.tm = 0; S.tn++;
+    }
+  };
+  // ---- CPU: only ever sees the throws already revealed ----
+  function cpuPick(S, side) {
+    const h = S.hist[1 - side], any = () => Math.floor(Math.random() * 3), counter = c => (c + 1) % 3;
+    if (diff === 0 || h.length < 3) return any();
+    const f = [0, 0, 0];
+    if (diff === 1) { if (Math.random() < .5) return any(); h.forEach(c => f[c]++); return counter(f.indexOf(Math.max(...f))); }
+    if (Math.random() < .2) return any();
+    const last = h[h.length - 1];   // what this player tends to throw right after their last throw
+    for (let i = 0; i < h.length - 1; i++) if (h[i] === last) f[h[i + 1]] += 2;
+    h.forEach(c => { f[c] += .5; });
+    return counter(f.indexOf(Math.max(...f)));
+  }
+  g.cpu = (S, side, dt, mem) => {
+    if (S.win != null || S.ph !== 'pick' || S.pick[side] >= 0) return {};
+    if (mem.rd !== S.rd || mem.mid !== S.mid) { mem.rd = S.rd; mem.mid = S.mid; mem.t = 0; mem.wait = .5 + Math.random() * 1.1; mem.c = cpuPick(S, side); }
+    mem.t += dt;
+    return mem.t > mem.wait ? { pick: [S.mid, S.rd, mem.c] } : {};
+  };
+  const tileKeys = k => [0, 1, 2].map(i => 't' + k + '_' + i);
+  function hoverTile(side) { if (!ptr.valid) return -1; ray.setFromCamera(ndc, camera); const key = m.tiles.pick(tileKeys(side)); return key ? +key.slice(-1) : -1; }
+  g.local = (V, side) => {
+    const act = ctl.act; ctl.act = null;
+    if (ctl.rd !== V.rd || ctl.mid !== V.mid) { ctl.rd = V.rd; ctl.mid = V.mid; ctl.c = -1; }
+    if (V.ph === 'pick' && V.win == null && ctl.c < 0 && V.pick[side] < 0) {
+      let c = -1;
+      if (act && act[0] === 'j') c = +act[1];
+      for (const d of [1, 2, 3]) if (digitPressed[d]) c = d - 1;
+      if (c < 0 && ptr.pressed && !ptr.kbd) c = hoverTile(side);
+      if (c >= 0) { ctl.c = c; tone(660, .05, { vol: .06 }); }
+    }
+    return { pick: ctl.c >= 0 ? [V.mid, V.rd, ctl.c] : null };
+  };
+  g.actions = (V, vs) => vs == null || V.win != null || V.ph !== 'pick' || V.pick[vs] >= 0 || (ctl.c >= 0 && ctl.rd === V.rd) ? [] :
+    NAMES.map((n, i) => ({ id: 'j' + i, label: n, ghost: i !== 1, pink: i === 1 }));
+  // the rival's throw stays secret (3 = "already chose") until both tiles turn over
+  g.pack = (S, seat) => ({ n: 2, pick: S.pick.map((p, k) => k === seat || S.ph === 'show' ? p : p >= 0 ? 3 : -1), ph: S.ph, tm: r3(S.tm), sc: S.sc, rd: S.rd, res: S.res, hist: S.hist, tn: S.tn, mid: S.mid, win: S.win });
+  g.unpack = d => ({ n: 2, pick: A(d.pick, 2, -1).map(v => sanInt(v, -1, 3, -1)), ph: ['pick', 'count', 'show'].includes(d.ph) ? d.ph : 'pick', tm: num(d.tm, 0), sc: A(d.sc, 2).map(v => sanInt(v, 0, 99, 0)),
+    rd: num(d.rd, 1), res: sanInt(d.res, -2, 1, -2), hist: [0, 1].map(k => (Array.isArray(d.hist && d.hist[k]) ? d.hist[k] : []).slice(-30).map(v => sanInt(v, 0, 2, 0))), tn: num(d.tn, 0), mid: d.mid, win: d.win === 0 || d.win === 1 ? d.win : null });
+  // ---- the three tiles: drawn icons on lacquered blocks ----
+  function icon(i) {
+    const acc = ['#8f96a3', '#38b6ff', '#ff4f6d'][i];
+    return canvasTex(256, 330, (c, w, h) => {
+      c.fillStyle = '#f4efe3'; c.fillRect(0, 0, w, h);
+      c.strokeStyle = acc; c.lineWidth = 10; c.strokeRect(14, 14, w - 28, h - 28);
+      c.save(); c.translate(w / 2, 140); c.lineJoin = 'round'; c.lineCap = 'round';
+      if (i === 0) {   // stone
+        const gr = c.createRadialGradient(-20, -25, 8, 0, 0, 80); gr.addColorStop(0, '#c3c8d0'); gr.addColorStop(1, '#5d636e');
+        c.fillStyle = gr; c.beginPath(); [[-70, 10], [-55, -40], [-15, -62], [35, -55], [68, -18], [72, 25], [40, 58], [-20, 62], [-62, 42]].forEach(([x, y], j) => j ? c.lineTo(x, y) : c.moveTo(x, y)); c.closePath(); c.fill();
+        c.strokeStyle = '#3c414a'; c.lineWidth = 4; c.stroke();
+        c.beginPath(); c.moveTo(-10, -30); c.lineTo(8, -5); c.lineTo(-4, 20); c.moveTo(30, 10); c.lineTo(48, 30); c.stroke();
+      } else if (i === 1) {   // sheet with a folded corner
+        c.rotate(-.12); c.fillStyle = '#ffffff'; c.strokeStyle = '#2b6fa8'; c.lineWidth = 5;
+        c.beginPath(); c.moveTo(-58, -75); c.lineTo(30, -75); c.lineTo(58, -47); c.lineTo(58, 75); c.lineTo(-58, 75); c.closePath(); c.fill(); c.stroke();
+        c.beginPath(); c.moveTo(30, -75); c.lineTo(30, -47); c.lineTo(58, -47); c.stroke();
+        c.lineWidth = 4; c.strokeStyle = '#9cc4e6'; for (let y = -30; y <= 55; y += 17) { c.beginPath(); c.moveTo(-40, y); c.lineTo(40, y); c.stroke(); }
+      } else {   // scissors
+        c.strokeStyle = '#4a4f59'; c.lineWidth = 9;
+        c.beginPath(); c.moveTo(-8, 8); c.lineTo(42, -78); c.moveTo(8, 8); c.lineTo(-42, -78); c.stroke();
+        c.strokeStyle = acc; c.lineWidth = 11; c.beginPath(); c.arc(-30, 45, 24, 0, TAU); c.stroke(); c.beginPath(); c.arc(30, 45, 24, 0, TAU); c.stroke();
+        c.lineWidth = 9; c.beginPath(); c.moveTo(-8, 8); c.lineTo(-20, 24); c.moveTo(8, 8); c.lineTo(20, 24); c.stroke();
+        c.fillStyle = '#1c1f25'; c.beginPath(); c.arc(0, 0, 7, 0, TAU); c.fill();
+      }
+      c.restore();
+      c.fillStyle = '#1c1f25'; c.font = '800 38px Barlow, Arial, sans-serif'; c.textAlign = 'center'; c.fillText(NAMES[i].toUpperCase(), w / 2, h - 44);
+      c.fillStyle = acc; c.font = '700 22px Barlow, Arial, sans-serif'; c.fillText(String(i + 1), w - 40, 50);
+    });
+  }
+  g.build = sc => {
+    buildCardTable(sc, { title: 'JOKENPÔ' });
+    const icons = [0, 1, 2].map(icon), back = canvasTex(256, 330, (c, w, h) => {
+      c.fillStyle = '#7a1822'; c.fillRect(0, 0, w, h); c.strokeStyle = '#e2bd6a'; c.lineWidth = 6; c.strokeRect(16, 16, w - 32, h - 32);
+      c.beginPath(); c.arc(w / 2, h / 2, 62, 0, TAU); c.stroke();
+      c.fillStyle = '#e2bd6a'; c.beginPath(); for (let j = 0; j < 8; j++) { const a = j * Math.PI / 4, r = j % 2 ? 16 : 46; c.lineTo(w / 2 + Math.sin(a) * r, h / 2 - Math.cos(a) * r); } c.closePath(); c.fill();
+    });
+    const backMat = mat('#ffffff', .45, 0, { map: back });
+    m = {
+      icons,
+      tiles: glideSet(sc, it => {
+        const gr = new THREE.Group(), edge = lacquer('#e9e2d2', .35, { emissive: '#ffc95c', emissiveIntensity: 0 });
+        gr.add(box(TWD, .016, THT, edge, 0, 0, 0));
+        const face = new THREE.Mesh(new THREE.PlaneGeometry(TWD * .96, THT * .96), mat('#ffffff', .5, 0, { map: icons[it.face] }));
+        face.rotation.x = -Math.PI / 2; face.position.y = .0085; gr.add(face);
+        const bk = new THREE.Mesh(new THREE.PlaneGeometry(TWD * .96, THT * .96), backMat); bk.rotation.x = Math.PI / 2; bk.position.y = -.0085; gr.add(bk);
+        gr.userData.face = face;
+        gr.userData.glow = (on, k) => { edge.emissiveIntensity += ((on ? .6 : 0) - edge.emissiveIntensity) * k; };
+        m.objs[it.key] = gr;
+        return shadowAll(gr);
+      }),
+      objs: {}, beat: -1
+    };
+  };
+  g.render = (V, dt, o) => {
+    const me = o.local ? o.side : null, view = me == null ? 0 : me, va = seatAng(view, 2), items = [], show = V.ph === 'show';
+    const hov = me != null && V.ph === 'pick' && V.pick[me] < 0 && !(ctl.c >= 0 && ctl.rd === V.rd) ? hoverTile(me) : -1;
+    for (const k of [0, 1]) {
+      const mine = k === me, p = mine && V.pick[k] < 0 && ctl.c >= 0 && ctl.rd === V.rd ? ctl.c : V.pick[k];
+      const chosen = p >= 0 ? (mine || (show && me == null) ? p : 1) : -1;   // a hidden throw travels on the middle tile
+      for (let i = 0; i < 3; i++) {
+        const key = 't' + k + '_' + i, face = !mine && show && i === chosen ? p : i;
+        let spot;
+        if (i === chosen) {
+          const c = atSeat(k, 2, 0, TY + .01, .14);
+          spot = show ? { x: c.x, y: TY + .01, z: c.z, ry: va, glow: V.res === k } : { x: c.x, y: TY + .01, z: c.z, ry: c.ry, rz: Math.PI };
+        } else if (mine) {
+          const up = i === hov, c = atSeat(k, 2, (i - 1) * .165, TY + .05 + (up ? .02 : 0), .37 - (up ? .015 : 0));
+          spot = { x: c.x, y: c.y, z: c.z, ry: c.ry, rx: .75, glow: up };
+        } else { const c = atSeat(k, 2, (i - 1) * .16, TY + .01, .48); spot = { x: c.x, y: c.y, z: c.z, ry: c.ry, rz: Math.PI }; }
+        items.push(Object.assign({ key, face: i, from: atSeat(k, 2, 0, TY + .25, .6, { rz: Math.PI }) }, spot));
+        const ob = m.objs[key]; if (ob && ob.userData.face.material.map !== m.icons[face]) { ob.userData.face.material.map = m.icons[face]; ob.userData.face.material.needsUpdate = true; }
+      }
+    }
+    m.tiles.frame(items, dt, .05);
+    if (V.ph === 'count') { const b = Math.min(2, Math.floor(V.tm / .6)); if (b !== m.beat) { m.beat = b; if (mode !== 'menu') tone([440, 523, 698][b], b === 2 ? .25 : .12, { type: 'triangle', vol: .1 }); } }
+    else m.beat = -1;
+    return null;
+  };
+  g.hud = (V, vs) => {
+    const nm = names(vs);
+    let line, big = '';
+    if (V.ph === 'pick') {
+      const mineDone = vs != null && (V.pick[vs] >= 0 || (ctl.c >= 0 && ctl.rd === V.rd)), myC = vs != null ? (V.pick[vs] >= 0 ? V.pick[vs] : ctl.c) : -1;
+      line = 'Rodada ' + V.rd + ' · ' + (vs == null ? 'escolhendo…' : mineDone ? 'Você escolheu ' + NAMES[myC].toLowerCase() + ' · ' + (V.pick[1 - vs] >= 0 ? nm[1 - vs] + ' também já escolheu' : 'esperando ' + nm[1 - vs]) : 'Escolha: pedra, papel ou tesoura' + (V.pick[1 - vs] >= 0 ? ' · ' + nm[1 - vs] + ' já escolheu' : ''));
+    } else if (V.ph === 'count') { line = 'Jokenpô!'; big = ['JO…', 'KEN…', 'PÔ!'][Math.min(2, Math.floor(V.tm / .6))]; }
+    else {
+      if (V.res === -1) line = 'Empate: os dois jogaram ' + NAMES[V.pick[0]].toLowerCase();
+      else { const w = V.res, pw = V.pick[w], pl = V.pick[1 - w]; line = (vs === w ? 'Você ganhou o ponto' : nm[w] + ' ganhou o ponto') + ': ' + NAMES[pw].toLowerCase() + ' ' + VERB[pw] + ' ' + NAMES[pl].toLowerCase(); }
+    }
+    return { sc: V.sc, line, big };
+  };
+  g.winner = V => V.win;
+  g.result = (V, vs) => Object.assign(winTitle(V, vs, V.win, false), { score: V.sc[0] + ' : ' + V.sc[1] });
+  g.overText = () => 'Fez 3 pontos primeiro.';
+  return g;
+})();
+
+// ======================================================================
+// GAME 22: FORCA (1x1 na mesma palavra: acertou, pontua e joga de novo)
+// ======================================================================
+const Forca = (() => {
+  const ROUNDS = 5, MAXMISS = 6, BONUS = 3, SP = .066, TZ = .1;
+  const WORDS = {
+    'Frutas': 'ABACAXI BANANA MORANGO MELANCIA JABUTICABA MARACUJÁ GOIABA AÇAÍ LARANJA PITANGA CAJU TANGERINA',
+    'Animais': 'JACARÉ TAMANDUÁ CAPIVARA ELEFANTE GIRAFA PINGUIM TUCANO ONÇA PREGUIÇA CAMALEÃO ARARA GOLFINHO',
+    'Países': 'ARGENTINA PORTUGAL JAPÃO CANADÁ MÉXICO ALEMANHA AUSTRÁLIA MARROCOS NORUEGA EGITO CHILE INDONÉSIA',
+    'Comidas': 'FEIJOADA BRIGADEIRO COXINHA PAMONHA MOQUECA TAPIOCA ACARAJÉ LASANHA PASTEL CUSCUZ PÃO_DE_QUEIJO BAIÃO_DE_DOIS',
+    'Profissões': 'ENGENHEIRO PROFESSORA BOMBEIRO JARDINEIRO ASTRONAUTA CARPINTEIRO VETERINÁRIA ELETRICISTA JORNALISTA CONFEITEIRO',
+    'Esportes': 'FUTEBOL BASQUETE CAPOEIRA NATAÇÃO ATLETISMO HANDEBOL SURFE XADREZ CICLISMO VÔLEI JUDÔ ESGRIMA',
+    'Coisas da casa': 'GELADEIRA LIQUIDIFICADOR TRAVESSEIRO VASSOURA CHUVEIRO ESPELHO CORTINA TESOURA TORNEIRA ESCORREDOR',
+    'Cidades do Brasil': 'FLORIANÓPOLIS SALVADOR MANAUS CURITIBA RECIFE FORTALEZA BELÉM GOIÂNIA PORTO_ALEGRE BELO_HORIZONTE OURO_PRETO PARATY',
+    'Instrumentos': 'VIOLÃO PANDEIRO CAVAQUINHO SANFONA BERIMBAU SAXOFONE TROMPETE BATERIA VIOLINO TECLADO FLAUTA CUÍCA',
+    'Natureza': 'CACHOEIRA ARCO-ÍRIS VULCÃO FURACÃO MONTANHA RELÂMPAGO GELEIRA DESERTO MANGUEZAL CORREDEIRA',
+    'Transportes': 'BICICLETA HELICÓPTERO SUBMARINO CAMINHÃO MOTOCICLETA TREM PATINETE NAVIO BALÃO CARROÇA',
+    'Corpo humano': 'COTOVELO TORNOZELO SOBRANCELHA PULMÃO CORAÇÃO JOELHO CÉREBRO ESTÔMAGO UMBIGO CLAVÍCULA',
+    'Brasilidades': 'CARNAVAL FESTA_JUNINA FREVO SAMBA FORRÓ QUADRILHA MARACATU BOSSA_NOVA CHIMARRÃO RAPADURA',
+    'Espaço': 'GALÁXIA ASTEROIDE TELESCÓPIO SATÉLITE ECLIPSE NEBULOSA JÚPITER SATURNO CONSTELAÇÃO FOGUETE',
+    'Roupas': 'BERMUDA CACHECOL CHINELO JAQUETA MOLETOM SUÉTER GRAVATA BIQUÍNI SANDÁLIA SAPATILHA'
+  };
+  const CATS = Object.keys(WORDS), LIST = CATS.map(c => WORDS[c].split(' ').map(w => w.replace(/_/g, ' ')));
+  const base = ch => ch.normalize('NFD').replace(/[̀-ͯ]/g, '');
+  const isLetter = ch => /^[A-Z]$/.test(base(ch));
+  const FREQ = 'AEOSRINDMUTCLPVGHQBFZJXKWY';
+  const g = { id: 'forca', multi: true, seats: [2], fixedCam: true, letters: true, realtime: false, planeY: 0, fxY: 0, halfW: .6, cam: { h: .56, d: 1.22, lz: -.1, ly: .17 },
+    help: 'Escolha letras no teclado da tela ou no seu teclado · cada letra certa vale 1 ponto por vez que aparece e você joga de novo · quem completar a palavra ganha +3 · 6 erros e ninguém leva o bônus · 5 palavras.' };
+  let m = {};
+  const maskOf = V => V.word != null ? [...V.word].map(ch => !isLetter(ch) || V.ph === 'end' || V.used.includes(base(ch)) ? ch : '_').join('') : V.mask;
+  function pickWord(S) {
+    for (let t = 0; t < 50; t++) {
+      const c = Math.floor(Math.random() * CATS.length), i = Math.floor(Math.random() * LIST[c].length), id = c * 100 + i;
+      if (S.seen.includes(id) && t < 49) continue;
+      S.seen.push(id); S.cat = c; S.word = LIST[c][i]; return;
+    }
+  }
+  g.init = () => { const f = Math.random() < .5 ? 0 : 1, S = { n: 2, word: '', cat: 0, seen: [], used: '', miss: 0, sc: [0, 0], rd: 1, turn: f, starter: f, ph: 'play', tm: 0, last: null, done: -2, tn: 0, mid: rid(), win: null }; pickWord(S); return S; };
+  function nextWord(S) {
+    const [a, b] = S.sc;
+    if (S.rd >= ROUNDS && a !== b) { S.win = a > b ? 0 : 1; return; }   // tied after 5: one more word
+    S.rd++; S.starter = 1 - S.starter; S.turn = S.starter; pickWord(S);
+    S.used = ''; S.miss = 0; S.last = null; S.done = -2; S.ph = 'play'; S.tm = 0; S.tn++;
+  }
+  g.step = (S, dt, ins) => {
+    if (S.win != null) return;
+    S.tm += dt;
+    if (S.ph === 'end') { if (S.tm > 3.4) nextWord(S); return; }
+    const k = S.turn, a = ins[k] && ins[k].guess;
+    if (!Array.isArray(a) || a[0] !== S.mid || a[1] !== S.tn || S.tm < .3) return;
+    const l = String(a[2] || '').toUpperCase();
+    if (!/^[A-Z]$/.test(l) || S.used.includes(l)) return;
+    S.used += l; S.tm = 0; S.tn++;
+    const n = [...S.word].filter(ch => base(ch) === l).length;
+    S.last = { k, l, n };
+    if (n) {
+      S.sc[k] += n; ev(S, 'tile', 0, TZ, 1, k);
+      if (!maskOf(S).includes('_')) { S.sc[k] += BONUS; S.done = k; S.ph = 'end'; ev(S, 'goal', 0, TZ, 1, k); }
+    } else {
+      S.miss++; S.turn = 1 - k; ev(S, 'capture', 0, -.3, 1, k);
+      if (S.miss >= MAXMISS) { S.done = -1; S.ph = 'end'; }
+    }
+  };
+  // ---- CPU: easy guesses loosely, normal goes by letter frequency, hard matches the pattern against the category ----
+  function cpuGuess(S) {
+    const free = FREQ.split('').filter(l => !S.used.includes(l));
+    if (!free.length) return null;
+    if (diff === 0) return free[Math.floor(Math.random() * Math.min(free.length, Math.random() < .5 ? 26 : 7))];
+    if (diff === 1 && Math.random() < .65) return free[Math.random() < .8 ? 0 : Math.min(1, free.length - 1)];
+    const mask = [...maskOf(S)].map(base), cands = LIST[S.cat].map(w => [...w].map(base)).filter(w => w.length === mask.length && w.every((ch, i) => mask[i] === '_' ? !S.used.includes(ch) && !mask.includes(ch) : ch === mask[i]));
+    if (!cands.length || (diff === 1 && Math.random() < .5) || Math.random() < .12) return free[0];
+    const cnt = {}; cands.forEach(w => new Set(w.filter((ch, i) => mask[i] === '_')).forEach(ch => { cnt[ch] = (cnt[ch] || 0) + 1; }));
+    return free.slice().sort((x, y) => (cnt[y] || 0) - (cnt[x] || 0))[0];
+  }
+  g.cpu = (S, side, dt, mem) => {
+    if (S.ph !== 'play') return {};
+    const l = cpuPlan(S, side, dt, mem, () => cpuGuess(S), .8);
+    return l ? { guess: [S.mid, S.tn, l] } : {};
+  };
+  g.local = (V, side) => {
+    if (ctl.tn !== V.tn || ctl.mid !== V.mid) { ctl.tn = V.tn; ctl.mid = V.mid; ctl.g = null; }
+    const act = ctl.act; ctl.act = null;
+    const l = act && /^k[A-Z]$/.test(act) ? act[1] : letterPressed;
+    if (l && V.ph === 'play' && V.win == null && !ctl.g) {
+      if (V.turn !== side) toast('Espere a sua vez.');
+      else if (V.used.includes(l)) toast('A letra ' + l + ' já foi.');
+      else ctl.g = [V.mid, V.tn, l];
+    }
+    return { guess: ctl.g };
+  };
+  g.pack = S => ({ n: 2, mask: maskOf(S), cat: S.cat, used: S.used, miss: S.miss, sc: S.sc, rd: S.rd, turn: S.turn, starter: S.starter, ph: S.ph, tm: r3(S.tm), last: S.last, done: S.done, tn: S.tn, mid: S.mid, win: S.win });
+  g.unpack = d => {
+    const L = d.last && typeof d.last === 'object' ? d.last : null;
+    return { n: 2, mask: String(d.mask || '').slice(0, 24).replace(/[^A-ZÀ-Ý_ -]/g, '_'), cat: sanInt(d.cat, 0, CATS.length - 1, 0), used: String(d.used || '').replace(/[^A-Z]/g, '').slice(0, 26), miss: sanInt(d.miss, 0, MAXMISS, 0),
+      sc: A(d.sc, 2).map(v => sanInt(v, 0, 999, 0)), rd: num(d.rd, 1), turn: d.turn === 1 ? 1 : 0, starter: d.starter === 1 ? 1 : 0, ph: d.ph === 'end' ? 'end' : 'play', tm: num(d.tm, 0),
+      last: L ? { k: L.k === 1 ? 1 : 0, l: /^[A-Z]$/.test(L.l) ? L.l : '?', n: sanInt(L.n, 0, 24, 0) } : null, done: sanInt(d.done, -2, 1, -2), tn: num(d.tn, 0), mid: d.mid, win: d.win === 0 || d.win === 1 ? d.win : null };
+  };
+  // ---- table: a wooden gallows behind a rack of letter tiles ----
+  const GH = .4, GX = -.02, GZ = -.3;
+  g.build = sc => {
+    buildTable(sc);
+    const wood = lacquer('#ffffff', .45, { map: woodTex('#8a5a32', '#3d2412') }), rope = mat('#c9a66b', .9), skin = lacquer('#f1e6d2', .4, { emissive: '#ff3b30', emissiveIntensity: 0 });
+    sc.add(box(.34, .025, .16, wood, GX, .0125, GZ));
+    sc.add(box(.03, GH, .03, wood, GX - .12, GH / 2 + .025, GZ));
+    sc.add(box(.22, .03, .03, wood, GX - .025, GH + .025, GZ));
+    const brace = box(.012, .1, .012, wood, GX - .085, GH - .03, GZ); brace.rotation.z = -Math.PI / 4; sc.add(brace);
+    const r = cyl(.0035, .0035, .06, rope, 8); r.position.set(GX + .07, GH - .005, GZ); sc.add(r);
+    // the six parts, in the order they appear
+    const top = GH - .035, part = (geo, x, y, rz) => { const me = new THREE.Mesh(geo, skin); me.position.set(GX + .07 + x, y, GZ); me.rotation.z = rz || 0; me.castShadow = true; me.scale.setScalar(.001); sc.add(me); return me; };
+    const limb = new THREE.CylinderGeometry(.007, .007, .085, 10);
+    const parts = [
+      part(new THREE.SphereGeometry(.032, 24, 16), 0, top - .03),
+      part(new THREE.CylinderGeometry(.009, .009, .11, 10), 0, top - .115),
+      part(limb, -.03, top - .095, -.9), part(limb, .03, top - .095, .9),
+      part(limb, -.025, top - .2, -.45), part(limb, .025, top - .2, .45)
+    ];
+    // the rack the word stands on (stretched to the word's length every frame)
+    const rack = box(1, .02, .05, wood, 0, .01, TZ - .005);
+    sc.add(rack);
+    const glyphs = {}, glyph = ch => glyphs[ch] || (glyphs[ch] = canvasTex(128, 160, (c, w, h) => {
+      c.fillStyle = '#f4efe3'; c.fillRect(0, 0, w, h); c.fillStyle = '#1c1f25'; c.font = '800 104px Barlow, Arial, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(ch, w / 2, h / 2 + 6);
+    }));
+    const blank = canvasTex(128, 160, (c, w, h) => { c.fillStyle = '#e8dcc2'; c.fillRect(0, 0, w, h); c.fillStyle = '#b08a4e'; c.fillRect(24, h - 34, w - 48, 9); });
+    const tileBody = lacquer('#e8dcc2', .4);
+    m = {
+      parts, skin, rack, glyph, objs: {},
+      tiles: glideSet(sc, it => {
+        const gr = new THREE.Group();
+        gr.add(box(SP * .9, .08, .012, tileBody, 0, .04, 0));
+        const face = new THREE.Mesh(new THREE.PlaneGeometry(SP * .86, .076), mat('#ffffff', .5, 0, { map: glyph('A'), emissive: '#ff4f6d', emissiveIntensity: 0 }));
+        face.position.set(0, .04, .0062); gr.add(face);
+        const bk = new THREE.Mesh(new THREE.PlaneGeometry(SP * .86, .076), mat('#ffffff', .5, 0, { map: blank })); bk.rotation.y = Math.PI; bk.position.set(0, .04, -.0062); gr.add(bk);
+        gr.userData.face = face; m.objs[it.key] = gr;
+        return shadowAll(gr);
+      })
+    };
+  };
+  g.render = (V, dt) => {
+    const mask = maskOf(V), items = [], n = mask.length, k = lerpK(dt, 9);
+    [...mask].forEach((ch, i) => {
+      if (ch === ' ') return;
+      const x = (i - (n - 1) / 2) * SP, open = ch !== '_', key = 'w' + V.mid + '_' + V.rd + '_' + i;
+      // hidden tiles stand turned away (blank back toward the players), and turn round once their letter is found
+      items.push({ key, x, y: .02, z: TZ, ry: open ? 0 : Math.PI, from: { x, y: .3, z: TZ, ry: Math.PI } });
+      const ob = m.objs[key];
+      if (ob && open) {
+        const fm = ob.userData.face.material, tex = m.glyph(ch);
+        if (fm.map !== tex) { fm.map = tex; fm.needsUpdate = true; }
+        const missed = V.ph === 'end' && V.done === -1 && !V.used.includes(base(ch));   // the letters nobody found
+        fm.emissiveIntensity += ((missed ? .35 : 0) - fm.emissiveIntensity) * k;
+      }
+    });
+    m.tiles.frame(items, dt, .04);
+    m.rack.scale.x += (Math.max(.2, n * SP + .04) - m.rack.scale.x) * k;
+    m.parts.forEach((p, i) => { const s = i < V.miss ? 1 : .001; p.scale.setScalar(p.scale.x + (s - p.scale.x) * lerpK(dt, 12)); });
+    m.skin.emissiveIntensity += ((V.ph === 'end' && V.done === -1 ? .5 : 0) - m.skin.emissiveIntensity) * k;
+    return null;
+  };
+  let kbdKey = '';
+  function syncKbd(V, vs) {
+    const mask = maskOf(V), hits = new Set([...mask].filter(isLetter).map(base)), my = vs != null && V.turn === vs && V.ph === 'play' && V.win == null;
+    const key = V.used + '|' + [...hits].join('') + '|' + my;
+    if (key === kbdKey) return; kbdKey = key;
+    $('kbd').classList.toggle('wait', !my);
+    $('kbd').querySelectorAll('button').forEach(b => {
+      const l = b.dataset.k, used = V.used.includes(l);
+      b.disabled = used || !my; b.className = used ? (hits.has(l) ? 'hit' : 'miss') : '';
+    });
+  }
+  g.hud = (V, vs) => {
+    const nm = names(vs), L = V.last;
+    $('kbd').hidden = vs == null || V.win != null; if (!$('kbd').hidden) syncKbd(V, vs);
+    const head = 'Palavra ' + V.rd + (V.rd > ROUNDS ? ' (desempate)' : ' de ' + ROUNDS) + ' · ' + CATS[V.cat] + ' · erros ' + V.miss + '/' + MAXMISS;
+    let line;
+    if (V.ph === 'end') line = V.done >= 0 ? (vs === V.done ? 'Você completou' : nm[V.done] + ' completou') + ' a palavra: +' + BONUS + '!' : 'Enforcado! Ninguém leva o bônus';
+    else {
+      const who = L ? (vs === L.k ? 'Você' : nm[L.k]) : '';
+      const prev = L ? who + (L.n ? ' acertou o ' + L.l + (L.n > 1 ? ' (' + L.n + ' vezes)' : '') : ' errou o ' + L.l) + ' · ' : '';
+      line = prev + (vs != null && V.turn === vs ? 'Sua vez: escolha uma letra' : 'Vez de ' + nm[V.turn]);
+    }
+    return { sc: V.sc, line: head + ' — ' + line };
+  };
+  g.winner = V => V.win;
+  g.result = (V, vs) => Object.assign(winTitle(V, vs, V.win, false), { score: V.sc[0] + ' : ' + V.sc[1] });
+  g.overText = () => 'Fez mais pontos nas ' + ROUNDS + ' palavras.';
+  return g;
+})();
+
+const GAMES = { pong: Pong, toto: Toto, pool: Pool, botao: Botao, damas: Damas, xadrez: Xadrez, gamao: Gamao, oito: Oito, truco: Truco, poker: Poker, buraco: Buraco, vinte1: Vinte1, airhockey: AirHockey, domino: Domino, ludo: Ludo, roleta: Roleta, general: General, sueca: Sueca, naval: Naval, velha: Velha, ppt: Jokenpo, forca: Forca };
 
 // ================= runtime =================
 // A match has nSeats seats. Seat 0 is the local player (CPU mode) or the host; online guests sit in seats 1…n-1;
@@ -5337,7 +5855,7 @@ function placeCamera(dt, now) {
   } else {
     const s = mySideView() === 1 && !G.fixedCam ? -1 : 1;
     tx = c.lx || 0; ty = c.h * (portrait ? k * 0.84 : 1); tz = c.d * s * (portrait ? k * 0.66 : 1);
-    camLook.set(tx, 0, c.lz * s);
+    camLook.set(tx, c.ly || 0, c.lz * s);
   }
   // swing around the table instead of cutting through it when the seat angle changes a lot
   const f = lerpK(dt, mode === 'menu' ? 30 : 4);
@@ -5389,7 +5907,7 @@ function updateHud(view, el) {
   if (showP) $('pfill').style.width = Math.round(h.power * 100) + '%';
 }
 function showGameUi(on) {
-  if (!on) { $('acts').hidden = true; hudCache.acts = ''; hudCache.bm = ''; canvas.style.cursor = ''; }
+  if (!on) { $('acts').hidden = true; $('kbd').hidden = true; hudCache.acts = ''; hudCache.bm = ''; canvas.style.cursor = ''; }
   $('hud').hidden = !on; $('help').hidden = !on; if (!on) { $('power').hidden = true; setText('big', ''); }
   $('chat').hidden = !(on && room && (mode === 'host' || mode === 'guest'));
 }
@@ -5758,6 +6276,11 @@ function syncGhost() { const b = $('btnGhost'); b.setAttribute('aria-pressed', S
 $('btnGhost').onclick = () => { ghost = !ghost; syncGhost(); try { localStorage.setItem('arena.ghost', ghost ? '1' : '0'); } catch {} };
 $('btnPause').onclick = () => togglePause();
 $('acts').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { initAudio(); ctl.act = b.dataset.act; } });
+{
+  const kb = $('kbd');
+  for (const row of ['QWERTYUIOP', 'ASDFGHJKL', 'ZXCVBNM']) { const r = document.createElement('div'); for (const l of row) { const b = document.createElement('button'); b.dataset.k = l; b.textContent = l; r.append(b); } kb.append(r); }
+  kb.addEventListener('click', e => { const b = e.target.closest('button'); if (b && !b.disabled) { initAudio(); ctl.act = 'k' + b.dataset.k; } });
+}
 function syncHq() { const b = $('btnHq'); b.setAttribute('aria-pressed', String(hq)); b.textContent = 'Gráficos: ' + (hq ? 'alto' : 'leve'); }
 $('btnHq').onclick = () => {
   hq = !hq; perfLevel = hq ? 1 : 2; try { localStorage.setItem('arena.hq', hq ? '1' : '0'); } catch {}
@@ -5834,7 +6357,7 @@ function frame(now) {
     updateFx(paused ? 0 : dt);
     draw();
   }
-  ptr.fresh = false; ptr.pressed = false; ptr.released = false; rotPressed = false; for (const k in digitPressed) delete digitPressed[k];
+  ptr.fresh = false; ptr.pressed = false; ptr.released = false; rotPressed = false; letterPressed = null; for (const k in digitPressed) delete digitPressed[k];
   requestAnimationFrame(frame);
 }
 
