@@ -242,7 +242,7 @@ input.code{font:700 18px var(--ui);letter-spacing:.38em;text-transform:uppercase
     </div>
     <div class="tabs" id="tabs" role="group" aria-label="Categorias">
       <button data-cat="real" aria-pressed="false">Tempo real <i>3</i></button>
-      <button data-cat="turnos" aria-pressed="false">Por turnos <i>4</i></button>
+      <button data-cat="turnos" aria-pressed="false">Por turnos <i>5</i></button>
       <button data-cat="tabuleiro" aria-pressed="false">Tabuleiro <i>5</i></button>
       <button data-cat="baralho" aria-pressed="false">Baralho <i>4</i></button>
       <button data-cat="cassino" aria-pressed="false">Cassino <i>3</i></button>
@@ -272,6 +272,10 @@ input.code{font:700 18px var(--ui);letter-spacing:.38em;text-transform:uppercase
       <button class="card" data-game="pool" style="--acc:#3fd39a" aria-pressed="false">
         <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="18" cy="28" r="11"/><circle cx="18" cy="28" r="4.5"/><path d="M29 17 44 4"/></svg>
         <b>Sinuca</b><small>Bola 8: lisas ou listradas, depois a preta. Mire e segure para dar força.</small>
+      </button>
+      <button class="card" data-game="dardos" style="--acc:#ff4f6d" aria-pressed="false">
+        <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="20" cy="28" r="15"/><circle cx="20" cy="28" r="8"/><circle cx="20" cy="28" r="2"/><path d="M21 27 40 8"/><path d="M36 8h5v5M38 6l4 4"/></svg>
+        <b>Dardos</b><small>301 de 2 a 4 jogadores. Segure para firmar a mão e solte para arremessar.</small>
       </button>
       <button class="card" data-game="botao" style="--acc:#ff4f6d" aria-pressed="false">
         <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><ellipse cx="17" cy="30" rx="11" ry="5"/><path d="M6 30v-4c0-3 5-5 11-5s11 2 11 5v4"/><circle cx="37" cy="17" r="4"/><path d="M24 22 33 18" stroke-dasharray="2 3"/></svg>
@@ -498,7 +502,7 @@ const A = (a, n, d = 0) => { const o = []; for (let i = 0; i < n; i++) o.push(nu
 const PHASE = v => ['count', 'play', 'over'].includes(v) ? v : 'count';
 const angDiff = d => Math.atan2(Math.sin(d), Math.cos(d));
 const COLS = ['#38b6ff', '#ff4f6d'];
-const GAME_NAMES = { pong: 'Ping-pong', toto: 'Totó', pool: 'Sinuca', botao: 'Futebol de botão', damas: 'Damas', xadrez: 'Xadrez', gamao: 'Gamão', oito: 'Oito Maluco', truco: 'Truco', poker: 'Poker', buraco: 'Buraco', vinte1: '21', airhockey: 'Air hockey', domino: 'Dominó', ludo: 'Ludo', roleta: 'Roleta', general: 'General', sueca: 'Sueca', naval: 'Batalha naval', velha: 'Jogo da velha', ppt: 'Pedra, papel e tesoura', forca: 'Forca' };
+const GAME_NAMES = { pong: 'Ping-pong', toto: 'Totó', pool: 'Sinuca', botao: 'Futebol de botão', damas: 'Damas', xadrez: 'Xadrez', gamao: 'Gamão', oito: 'Oito Maluco', truco: 'Truco', poker: 'Poker', buraco: 'Buraco', vinte1: '21', airhockey: 'Air hockey', domino: 'Dominó', ludo: 'Ludo', roleta: 'Roleta', general: 'General', sueca: 'Sueca', naval: 'Batalha naval', velha: 'Jogo da velha', ppt: 'Pedra, papel e tesoura', forca: 'Forca', dardos: 'Dardos' };
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 // CPU difficulty: 0 fácil, 1 normal, 2 difícil — each game's cpu() reads its knobs from here
 let diff = 1;
@@ -849,6 +853,8 @@ function playEv(e) {
       spawnBurst(0, 0, col, 40, 1.1, y + .05, 1.1);
       if (!quiet) { tone(330, .12, { type: 'sawtooth', vol: .07, slide: 220 }); tone(520, .2, { type: 'square', vol: .06, delay: .12, slide: 160 }); noise(.25, .15, 0, 900); shake = .3; }
       break;
+    case 'dart': if (!quiet) { noise(.045, .3 * v + .1, pan, 1500); tone(150, .07, { type: 'triangle', vol: .14 * v + .04, pan }); } break;
+    case 'cheer': if (!quiet) { [523, 659, 784, 1047].forEach((f, i) => tone(f, .2, { type: 'triangle', vol: .12, delay: i * .1 })); noise(.8, .12, 0, 1200); } break;
     case 'dice':
       if (!quiet) for (let i = 0; i < 7; i++) tone(rnd(1700, 2700), .025, { type: 'square', vol: .05 * (1 - i / 8), pan: pan + rnd(-.2, .2), delay: i * .14 + rnd(0, .05) });
       break;
@@ -1304,7 +1310,7 @@ const Pool = (() => {
   const BC = ['#f7f3e8', '#f2c200', '#1f4fbf', '#d42a2a', '#5b2a86', '#f07d18', '#1d8a4a', '#7a1f1f', '#111114', '#f2c200', '#1f4fbf', '#d42a2a', '#5b2a86', '#f07d18', '#1d8a4a', '#7a1f1f'];
   const grp = i => i >= 1 && i <= 7 ? 1 : i >= 9 ? 2 : 0;
   const GN = ['', 'lisas', 'listradas'];
-  const g = { id: 'pool', realtime: false, planeY: R, fxY: 0.0, halfW: HW, cam: { h: 2.25, d: 1.55, lz: 0.05 },
+  const g = { id: 'pool', realtime: false, planeY: R, fxY: 0.0, halfW: HW, cam: { h: 2.6, d: 2.25, lz: 0.25 },
     help: 'Mire com o mouse ou o dedo · segure (ou Espaço) para carregar a força e solte para tacar · ←/→ ajusta a mira.' };
   let m = {};
   function ballTex(n) {
@@ -2644,19 +2650,19 @@ let CARD_ART = null;
 const KEEP_TEX = new Set();   // textures shared across scenes: never disposed on game switch
 function cardArt() {   // one atlas for all 52 faces + one back, shared by every card game (never disposed)
   if (CARD_ART) return CARD_ART;
-  const W = 170, H = 238;
-  const atlas = canvasTex(W * 13, H * 4, c => {
+  const W = 170, H = 238, K = 1.5;   // layout units; the atlas is drawn K times sharper
+  const atlas = canvasTex(W * K * 13, H * K * 4, c => {
     for (let s = 0; s < 4; s++) for (let r = 0; r < 13; r++) {
-      c.save(); c.translate(r * W, s * H);
+      c.save(); c.translate(r * W * K, s * H * K); c.scale(K, K);
       roundRectPath(c, 2, 2, W - 4, H - 4, 16); c.fillStyle = '#fbf8f1'; c.fill(); c.strokeStyle = '#d6cfbf'; c.lineWidth = 2; c.stroke();
       const col = isRedSuit(s) ? '#c11d2e' : '#15151b';
       const corner = () => {
         c.fillStyle = col; c.textAlign = 'center'; c.textBaseline = 'alphabetic';
-        c.font = '700 ' + (r === 9 ? 32 : 38) + 'px Georgia, "Times New Roman", serif'; c.fillText(RANK_CH[r], 25, 44);
-        c.font = '30px "Segoe UI Symbol", "DejaVu Sans", sans-serif'; c.fillText(SUIT_CH[s], 25, 74);
+        c.font = '700 ' + (r === 9 ? 36 : 46) + 'px Georgia, "Times New Roman", serif'; c.fillText(RANK_CH[r], 24, 48);
+        c.font = '40px "Segoe UI Symbol", "DejaVu Sans", sans-serif'; c.fillText(SUIT_CH[s], 24, 88);
       };
       corner(); c.save(); c.translate(W, H); c.rotate(Math.PI); corner(); c.restore();
-      const ix = 46, iy = 30, iw = W - 92, ih = H - 60;
+      const ix = 54, iy = 30, iw = W - 108, ih = H - 60;
       c.fillStyle = col; c.textAlign = 'center'; c.textBaseline = 'middle';
       if (r === 0) {
         c.font = (s === 2 ? 128 : 100) + 'px "Segoe UI Symbol", "DejaVu Sans", sans-serif'; c.fillText(SUIT_CH[s], W / 2, H / 2 + 4);
@@ -3645,13 +3651,24 @@ const Buraco = (() => {
     for (let k = 0; k < nMortos; k++) for (let i = 0; i < 5; i++) items.push({ key: 'mo' + k + '_' + i, id: -1, x: P.mo[k][0], y: TY + .001 + i * .0011, z: P.mo[k][1], rz: Math.PI, ry: Math.PI / 2 });
     const va = seatAng(me == null ? 0 : me, n);
     V.lixo.slice(-16).forEach((id, i, a) => items.push({ key: 'c' + id, id, x: P.lx[0] + i * P.dx, y: TY + .001 + i * .0011, z: P.lx[1] + (hsh(id) % 5 - 2) * .003, ry: va + (hsh(id) % 11 - 5) * .02, glow: drawTurn && i === a.length - 1, from: seatFrom(V.turn, n) }));
-    // team games: in 1x1 across each player's half; in duplas in front of the team's first seat, left part
-    for (const t of [0, 1]) {
+    // 1x1: each player's games on their half of the table, all of them upright for whoever is looking;
+    // rows a full card apart (no overlap) until there are too many, then they close up keeping the corner index in view
+    if (n === 2) for (const t of [0, 1]) {
+      const vw = me == null ? 0 : me, mine = t === vw, melds = V.melds[t], cols = melds.length > 4 ? 3 : 2, colW = cols === 3 ? .29 : .42;
+      const rows = Math.ceil(melds.length / cols), step = rows <= 2 ? .13 : Math.min(.13, .2 / (rows - 1));
+      melds.forEach((md, j) => {
+        const col = j % cols, row = Math.floor(j / cols), cnt = md.c.length, sp = Math.min(.03, (colW - CW - .015) / Math.max(1, cnt - 1));
+        const cx = (col - (cols - 1) / 2) * colW, w = CW + (cnt - 1) * sp, lz = mine ? .085 + row * step : -.085 - (rows - 1 - row) * step;
+        md.c.forEach((id, i) => items.push(Object.assign({ key: 'c' + id, id, glow: isClean(md), from: seatFrom(t, n) }, atSeat(vw, n, cx - w / 2 + CW / 2 + i * sp, TY + .001 + (mine ? row : rows - 1 - row) * .003 + i * .0007, lz))));
+      });
+    }
+    // duplas: in front of the team's first seat, left part
+    else for (const t of [0, 1]) {
       const melds = V.melds[t], cols = n === 2 ? (melds.length > 8 ? 3 : 2) : 2, colW = n === 2 ? (cols === 3 ? .27 : .4) : .22, x0 = n === 2 ? 0 : -.14;
       melds.forEach((md, j) => {
-        const col = j % cols, row = Math.floor(j / cols), cnt = md.c.length, sp = Math.min(.021, (colW - CW - .012) / Math.max(1, cnt - 1));
+        const col = j % cols, row = Math.floor(j / cols), cnt = md.c.length, sp = Math.min(.026, (colW - CW - .012) / Math.max(1, cnt - 1));
         const cx = x0 + (col - (cols - 1) / 2) * colW, w = CW + (cnt - 1) * sp;
-        md.c.forEach((id, i) => items.push(Object.assign({ key: 'c' + id, id, glow: isClean(md), from: seatFrom(t, n) }, atSeat(t, n, cx - w / 2 + CW / 2 + i * sp, TY + .001 + row * .003 + i * .0007, .1 + row * .062))));
+        md.c.forEach((id, i) => items.push(Object.assign({ key: 'c' + id, id, glow: isClean(md), from: seatFrom(t, n) }, atSeat(t, n, cx - w / 2 + CW / 2 + i * sp, TY + .001 + row * .003 + i * .0007, .09 + row * .072))));
       });
     }
     const myPlay = me != null && V.turn === me && V.ph === 'play' && V.win == null, sel = myPlay && ctl.tn === V.tn ? ctl.sel || [] : [];
@@ -5820,7 +5837,209 @@ const Forca = (() => {
   return g;
 })();
 
-const GAMES = { pong: Pong, toto: Toto, pool: Pool, botao: Botao, damas: Damas, xadrez: Xadrez, gamao: Gamao, oito: Oito, truco: Truco, poker: Poker, buraco: Buraco, vinte1: Vinte1, airhockey: AirHockey, domino: Domino, ludo: Ludo, roleta: Roleta, general: General, sueca: Sueca, naval: Naval, velha: Velha, ppt: Jokenpo, forca: Forca };
+// ======================================================================
+// GAME 23: DARDOS (301, de 2 a 4 jogadores)
+// ======================================================================
+const Dardos = (() => {
+  const START = 301, MAXRD = 10, BY0 = 1.62, FLY = .32;
+  const ORDER = [20, 1, 18, 4, 13, 6, 10, 15, 2, 17, 3, 19, 7, 16, 8, 11, 14, 9, 12, 5];
+  const RB = { bull: .00635, outer: .0159, t0: .099, t1: .107, d0: .162, d1: .170, rim: .225 };   // regulation board, metres
+  const g = { id: 'dardos', multi: true, seats: [2, 3, 4], fixedCam: true, realtime: false, planeY: 0, fxY: BY0, halfW: .4, cam: { h: BY0, d: 1.05, lz: 0, ly: BY0, flat: true },
+    help: 'Mire com o mouse · segure o botão (ou Espaço) para firmar a mão e solte para arremessar; segurar demais faz a mão tremer · 3 dardos por vez · comece com 301 e zere exato: passou de zero, estoura e volta.' };
+  let m = {};
+  const r4 = v => Math.round(v * 1e4) / 1e4;
+  const gauss = () => (Math.random() + Math.random() + Math.random() + Math.random() - 2) * 1.22;
+  function scoreAt(x, y) {   // board coordinates: metres from the bull, y up
+    const r = Math.hypot(x, y);
+    if (r <= RB.bull) return { pts: 50, lab: 'MOSCA' };
+    if (r <= RB.outer) return { pts: 25, lab: '25' };
+    if (r > RB.d1) return { pts: 0, lab: 'FORA' };
+    const a = Math.atan2(y, x) * 180 / Math.PI, n = ORDER[((Math.round((90 - a) / 18) % 20) + 20) % 20];
+    const mult = r >= RB.t0 && r <= RB.t1 ? 3 : r >= RB.d0 ? 2 : 1;
+    return { pts: n * mult, lab: (mult === 3 ? 'T' : mult === 2 ? 'D' : '') + n };
+  }
+  const target = (n, mult) => { if (n >= 25) return [0, 0]; const a = (90 - ORDER.indexOf(n) * 18) * Math.PI / 180, r = mult === 3 ? .103 : mult === 2 ? .166 : .135; return [Math.cos(a) * r, Math.sin(a) * r]; };
+  g.init = n => { const f = Math.floor(Math.random() * n); return { n, left: Array(n).fill(START), turn: f, first: f, start: START, darts: [], rd: 1, ph: 'aim', tm: 0, fly: null, aim: [0, .02], bust: false, tn: 0, mid: rid(), win: null }; };
+  g.step = (S, dt, ins) => {
+    if (S.win != null) return;
+    S.tm += dt;
+    const k = S.turn, inp = ins[k];
+    if (inp && Array.isArray(inp.aim)) S.aim = [r4(clamp(num(inp.aim[0], 0), -.35, .35)), r4(clamp(num(inp.aim[1], 0), -.35, .35))];
+    if (S.ph === 'aim') {
+      const a = inp && inp.throw;
+      if (!Array.isArray(a) || a[0] !== S.mid || a[1] !== S.tn || S.tm < .3) return;
+      // a little scatter of the host's own on every throw: no hand is perfect
+      S.fly = [r4(clamp(num(a[2], 0), -.35, .35) + gauss() * .003), r4(clamp(num(a[3], 0), -.35, .35) + gauss() * .003)];
+      S.ph = 'fly'; S.tm = 0; S.tn++;
+    } else if (S.ph === 'fly') {
+      if (S.tm < FLY) return;
+      const [x, y] = S.fly, s = scoreAt(x, y), left = S.left[k] - s.pts;
+      S.fly = null; S.darts.push([x, y, s.lab, s.pts]); ev(S, 'dart', x, 0, s.pts ? 1 : .4, k);
+      if (left < 0) { S.left[k] = S.start; S.bust = true; S.ph = 'done'; S.tm = 0; S.tn++; ev(S, 'check', 0, 0); return; }
+      S.left[k] = left; S.tn++;
+      if (left === 0) { S.win = k; ev(S, 'cheer', 0, 0, 1, k); return; }
+      S.ph = S.darts.length >= 3 ? 'done' : 'aim'; S.tm = 0;
+    } else if (S.ph === 'done' && S.tm > 1.9) {   // pull the darts, next player
+      S.darts = []; S.bust = false; S.turn = (k + 1) % S.n;
+      if (S.turn === S.first && ++S.rd > MAXRD) { S.win = S.left.indexOf(Math.min(...S.left)); return; }
+      S.start = S.left[S.turn]; S.ph = 'aim'; S.tm = 0; S.tn++;
+    }
+  };
+  // ---- CPU: aims at a sensible target for what it has left, with a hand that shakes by difficulty ----
+  function plan(left) {
+    if (left > 60) return diff === 0 ? [20, 1] : [20, 3];
+    if (left === 50) return [50, 1];
+    if (left <= 20) return [left, 1];
+    if (left <= 40 && left % 2 === 0) return [left / 2, 2];
+    if (left % 3 === 0) return [left / 3, 3];
+    return [Math.min(20, left - 20), 1];
+  }
+  g.cpu = (S, side, dt, mem) => {
+    if (S.win != null || S.turn !== side || S.ph !== 'aim') return {};
+    if (mem.tn !== S.tn || mem.mid !== S.mid) {
+      mem.tn = S.tn; mem.mid = S.mid; mem.t = 0;
+      const [tx, ty] = target(...plan(S.left[side])), e = DIFF([.045, .026, .016]);
+      mem.hit = [tx + gauss() * e, ty + gauss() * e]; mem.st = [tx + rnd(-.09, .09), ty + rnd(-.09, .09)];
+    }
+    mem.t += dt;
+    const u = ease(clamp(mem.t / .9, 0, 1)), aim = [mem.st[0] + (mem.hit[0] - mem.st[0]) * u, mem.st[1] + (mem.hit[1] - mem.st[1]) * u];
+    return mem.t > 1.15 ? { aim, throw: [S.mid, S.tn, mem.hit[0], mem.hit[1]] } : { aim };
+  };
+  // ---- the player's hand: the pointer sets the aim, the hand sways around it ----
+  const boardPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0), bp = new THREE.Vector3();
+  function pointerOnBoard() { ray.setFromCamera(ndc, camera); return ray.ray.intersectPlane(boardPlane, bp) ? [bp.x, bp.y - BY0] : null; }
+  const sway = (t, amp) => [amp * (Math.sin(t * 1.9) * .75 + Math.sin(t * 3.3 + 1.3) * .35), amp * (Math.sin(t * 2.4 + .6) * .7 + Math.sin(t * 1.2 + 2) * .45)];
+  // holding the button steadies the hand for a moment; hold too long and it starts to tremble
+  const ampAt = h => h < 0 ? .02 : h < .7 ? .02 - .015 * (h / .7) : h < 1.6 ? .005 : Math.min(.045, .005 + (h - 1.6) * .03);
+  g.local = (V, side) => {
+    if (ctl.tn !== V.tn || ctl.mid !== V.mid) { ctl.tn = V.tn; ctl.mid = V.mid; ctl.th = null; }
+    const my = V.turn === side && V.ph === 'aim' && V.win == null;
+    if (!ctl.base) ctl.base = [0, .02];
+    if (ndc.x !== ctl.nx || ndc.y !== ctl.ny || ptr.pressed) { ctl.nx = ndc.x; ctl.ny = ndc.y; const p = pointerOnBoard(); if (p) ctl.base = [clamp(p[0], -.3, .3), clamp(p[1], -.3, .3)]; }
+    ctl.base[0] = clamp(ctl.base[0] + ((keys.right ? 1 : 0) - (keys.left ? 1 : 0)) * (keys.fine ? .03 : .12) * dtG, -.3, .3);
+    ctl.base[1] = clamp(ctl.base[1] + ((keys.up ? 1 : 0) - (keys.down ? 1 : 0)) * (keys.fine ? .03 : .12) * dtG, -.3, .3);
+    ctl.t = (ctl.t || 0) + dtG;
+    if (my && ptr.pressed && ctl.hold == null) ctl.hold = 0;
+    if (!my) ctl.hold = null; else if (ctl.hold != null) ctl.hold += dtG;
+    const w = sway(ctl.t, ampAt(ctl.hold == null ? -1 : ctl.hold));
+    ctl.aimP = [ctl.base[0] + w[0], ctl.base[1] + w[1]];
+    if (ptr.released && ctl.hold != null) { if (my && !ctl.th) ctl.th = [V.mid, V.tn, r4(ctl.aimP[0]), r4(ctl.aimP[1])]; ctl.hold = null; }
+    return { aim: [r4(ctl.aimP[0]), r4(ctl.aimP[1])], throw: ctl.th };
+  };
+  g.pack = S => ({ n: S.n, left: S.left, turn: S.turn, first: S.first, start: S.start, darts: S.darts, rd: S.rd, ph: S.ph, tm: r3(S.tm), fly: S.fly, aim: S.aim, bust: S.bust, tn: S.tn, mid: S.mid, win: S.win });
+  g.unpack = d => {
+    const n = sanInt(d.n, 2, 4, 2), pt = v => r4(clamp(num(v, 0), -.5, .5));
+    return { n, left: A(d.left, n, START).map(v => sanInt(v, 0, START, START)), turn: sanInt(d.turn, 0, n - 1, 0), first: sanInt(d.first, 0, n - 1, 0), start: sanInt(d.start, 0, START, START),
+      darts: (Array.isArray(d.darts) ? d.darts : []).slice(0, 3).map(a => [pt(a && a[0]), pt(a && a[1]), /^(MOSCA|FORA|25|[TD]?\d{1,2})$/.test(a && a[2]) ? a[2] : '', sanInt(a && a[3], 0, 60, 0)]),
+      rd: num(d.rd, 1), ph: ['aim', 'fly', 'done'].includes(d.ph) ? d.ph : 'aim', tm: num(d.tm, 0), fly: Array.isArray(d.fly) ? [pt(d.fly[0]), pt(d.fly[1])] : null,
+      aim: Array.isArray(d.aim) ? [pt(d.aim[0]), pt(d.aim[1])] : [0, 0], bust: !!d.bust, tn: num(d.tn, 0), mid: d.mid, win: d.win != null && d.win >= 0 && d.win < n ? d.win | 0 : null };
+  };
+  // ---- scene: a regulation board on a panelled wall, a board light, a chalk scoreboard ----
+  function boardTex() {
+    return canvasTex(1024, 1024, (c, w) => {
+      const s = w / 2 / RB.rim, cx = w / 2, cy = w / 2, deg = Math.PI / 180;
+      c.fillStyle = '#121214'; c.beginPath(); c.arc(cx, cy, w / 2, 0, TAU); c.fill();
+      const ring = (r0, r1, a0, a1, col) => { c.fillStyle = col; c.beginPath(); c.arc(cx, cy, r1 * s, a0, a1); c.arc(cx, cy, r0 * s, a1, a0, true); c.closePath(); c.fill(); };
+      ORDER.forEach((n, i) => {
+        const a = 90 - i * 18, a0 = -(a + 9) * deg, a1 = -(a - 9) * deg, dark = i % 2 === 0;
+        ring(RB.outer, RB.t0, a0, a1, dark ? '#1b1b1d' : '#efe2c1'); ring(RB.t1, RB.d0, a0, a1, dark ? '#1b1b1d' : '#efe2c1');
+        ring(RB.t0, RB.t1, a0, a1, dark ? '#c8201e' : '#1b7a3a'); ring(RB.d0, RB.d1, a0, a1, dark ? '#c8201e' : '#1b7a3a');
+      });
+      c.fillStyle = '#1b7a3a'; c.beginPath(); c.arc(cx, cy, RB.outer * s, 0, TAU); c.fill();
+      c.fillStyle = '#c8201e'; c.beginPath(); c.arc(cx, cy, RB.bull * s, 0, TAU); c.fill();
+      // the wire spider
+      c.strokeStyle = 'rgba(214,218,224,.8)'; c.lineWidth = 2.2;
+      for (const r of [RB.bull, RB.outer, RB.t0, RB.t1, RB.d0, RB.d1]) { c.beginPath(); c.arc(cx, cy, r * s, 0, TAU); c.stroke(); }
+      for (let i = 0; i < 20; i++) { const a = -(90 - i * 18 + 9) * deg; c.beginPath(); c.moveTo(cx + Math.cos(a) * RB.outer * s, cy + Math.sin(a) * RB.outer * s); c.lineTo(cx + Math.cos(a) * RB.d1 * s, cy + Math.sin(a) * RB.d1 * s); c.stroke(); }
+      c.fillStyle = '#f4f1ea'; c.font = '700 54px Barlow, Arial, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
+      ORDER.forEach((n, i) => { const a = (90 - i * 18) * deg, r = (RB.d1 + RB.rim) / 2 * s; c.fillText(String(n), cx + Math.cos(a) * r, cy - Math.sin(a) * r + 2); });
+    });
+  }
+  function makeDart(col) {   // built pointing +z with the tip at the origin
+    const gr = new THREE.Group(), steel = mat('#d9dde3', .25, 1), tung = mat('#50555e', .35, .9), shaftM = mat(col, .4, .1), flightM = new THREE.MeshStandardMaterial({ color: col, roughness: .5, side: THREE.DoubleSide });
+    const part = (geo, mtl, z) => { const me = new THREE.Mesh(geo, mtl); me.rotation.x = Math.PI / 2; me.position.z = z; gr.add(me); return me; };
+    part(new THREE.ConeGeometry(.0016, .022, 10), steel, -.011);
+    part(new THREE.CylinderGeometry(.0034, .0026, .042, 16), tung, -.043);
+    part(new THREE.CylinderGeometry(.0018, .0018, .034, 8), shaftM, -.081);
+    const fl = new THREE.PlaneGeometry(.026, .032).rotateY(Math.PI / 2);
+    for (const r of [0, Math.PI / 2]) { const me = new THREE.Mesh(fl.clone().rotateZ(r), flightM); me.position.z = -.103; gr.add(me); }
+    return shadowAll(gr);
+  }
+  g.build = sc => {
+    const wallTex = woodTex('#5a3a26', '#2a1a10'); wallTex.wrapS = wallTex.wrapT = THREE.RepeatWrapping; wallTex.repeat.set(1, 6); wallTex.rotation = Math.PI / 2;
+    const wall = new THREE.Mesh(new THREE.PlaneGeometry(6, 4), mat('#ffffff', .8, 0, { map: wallTex, envMapIntensity: .4 })); wall.position.set(0, BY0, -.045); wall.receiveShadow = true; sc.add(wall);
+    sc.add(box(.66, .66, .03, lacquer('#2a1a10', .45), 0, BY0, -.03));   // cabinet
+    const back = cyl(.232, .232, .04, mat('#0e0e10', .8), 64); back.rotation.x = Math.PI / 2; back.position.set(0, BY0, -.018); sc.add(back);
+    const face = new THREE.Mesh(new THREE.CircleGeometry(RB.rim, 96), mat('#ffffff', .85, 0, { map: boardTex(), envMapIntensity: .25 })); face.position.set(0, BY0, .0025); face.receiveShadow = true; sc.add(face);
+    // board light: a dark hood above, a warm spot on the board
+    sc.add(box(.5, .03, .14, lacquer('#15151a', .4), 0, BY0 + .5, .08));
+    const lamp = new THREE.SpotLight('#ffe7c2', 2.4, 4, .62, .55, 1); lamp.position.set(0, BY0 + .7, .6); lamp.target.position.set(0, BY0, 0); sc.add(lamp, lamp.target);
+    const chalkC = document.createElement('canvas'); chalkC.width = 384; chalkC.height = 512;
+    const chalk = new THREE.CanvasTexture(chalkC); chalk.encoding = THREE.sRGBEncoding;
+    sc.add(box(.33, .45, .02, lacquer('#6b4426', .4), .555, BY0 - .03, -.03));
+    const cb = new THREE.Mesh(new THREE.PlaneGeometry(.3, .42), mat('#ffffff', .95, 0, { map: chalk, envMapIntensity: .2 })); cb.position.set(.555, BY0 - .03, -.018); sc.add(cb);
+    const cross = new THREE.Group(), ringM = new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: .9, depthWrite: false });
+    cross.add(new THREE.Mesh(new THREE.RingGeometry(.012, .0155, 40), ringM), new THREE.Mesh(new THREE.CircleGeometry(.0028, 14), ringM));
+    for (let i = 0; i < 4; i++) { const t = new THREE.Mesh(new THREE.PlaneGeometry(.012, .0025), ringM); const a = i * Math.PI / 2; t.position.set(Math.cos(a) * .022, Math.sin(a) * .022, 0); t.rotation.z = a; cross.add(t); }
+    cross.renderOrder = 5; sc.add(cross);
+    m = { darts: piecePool(sc, key => makeDart(SEAT_COLS[+key])), cross, ringM, chalkC, chalk, chalkKey: '' };
+  };
+  const look = new THREE.Vector3();
+  function placeDart(o, x, y, z, tx, ty, tz) { o.position.set(x, y, z); look.set(tx, ty, tz); o.lookAt(look); o.scale.setScalar(1.5); }
+  function drawChalk(V) {
+    const nm = names(mySideView()), key = V.left.join() + '|' + V.turn + '|' + nm.join() + '|' + V.rd;
+    if (key === m.chalkKey) return; m.chalkKey = key;
+    const c = m.chalkC.getContext('2d'), w = 384, h = 512;
+    c.fillStyle = '#1f2a24'; c.fillRect(0, 0, w, h);
+    c.fillStyle = 'rgba(255,255,255,.04)'; for (let i = 0; i < 60; i++) c.fillRect(Math.random() * w, Math.random() * h, rnd(20, 90), 2);
+    c.fillStyle = '#e9efe9'; c.font = '700 54px Georgia, serif'; c.textAlign = 'center'; c.fillText('301', w / 2, 70);
+    c.font = '600 22px Barlow, Arial, sans-serif'; c.fillStyle = 'rgba(233,239,233,.7)'; c.fillText('rodada ' + Math.min(V.rd, MAXRD) + ' de ' + MAXRD, w / 2, 102);
+    c.strokeStyle = 'rgba(233,239,233,.5)'; c.lineWidth = 2; c.beginPath(); c.moveTo(30, 122); c.lineTo(w - 30, 122); c.stroke();
+    for (let s = 0; s < V.n; s++) {
+      const y = 175 + s * 88;
+      c.fillStyle = SEAT_COLS[s]; c.beginPath(); c.arc(40, y - 10, 9, 0, TAU); c.fill();
+      c.fillStyle = s === V.turn ? '#ffffff' : 'rgba(233,239,233,.75)'; c.textAlign = 'left'; c.font = (s === V.turn ? '700 ' : '600 ') + '28px Barlow, Arial, sans-serif';
+      c.fillText((s === V.turn ? '▸ ' : '') + nm[s], 60, y);
+      c.textAlign = 'right'; c.font = '700 44px Georgia, serif'; c.fillText(String(V.left[s]), w - 28, y + 4);
+    }
+    m.chalk.needsUpdate = true;
+  }
+  g.render = (V, dt, o) => {
+    const me = o.local ? o.side : null, tm = V.tm + (o.el || 0);
+    m.darts.begin();
+    V.darts.forEach(([x, y]) => placeDart(m.darts.get(String(V.turn)), x, BY0 + y, .002, x - .32, BY0 + y - .42, -1));
+    if (V.ph === 'fly' && V.fly) {   // in the air: an arc from the hand to the board, tip first
+      const u = clamp(tm / FLY, 0, 1), [x, y] = V.fly, sx = .16, sy = BY0 - .2, sz = .82;
+      const pos = u2 => [sx + (x - sx) * u2, sy + (BY0 + y - sy) * u2 + Math.sin(Math.PI * u2) * .06, sz * (1 - u2) + .002];
+      const p = pos(u), q = pos(Math.min(1, u + .05));
+      placeDart(m.darts.get(String(V.turn)), p[0], p[1], p[2], q[0] + (q[0] - p[0]) * 5, q[1] + (q[1] - p[1]) * 5, q[2] + (q[2] - p[2]) * 5 - (u > .95 ? 1 : 0));
+    }
+    m.darts.end();
+    const aiming = V.ph === 'aim' && V.win == null, mine = aiming && me === V.turn && ctl.aimP;
+    const a = mine ? ctl.aimP : V.aim;
+    m.cross.visible = aiming; m.cross.position.set(a[0], BY0 + a[1], .006);
+    m.ringM.color.set(SEAT_COLS[V.turn]);
+    drawChalk(V);
+    return null;
+  };
+  g.hud = (V, vs) => {
+    const nm = names(vs), k = V.turn, me = vs === k, who = me ? 'Você' : nm[k];
+    const lastD = V.darts[V.darts.length - 1], sum = V.darts.reduce((t, d) => t + d[3], 0);
+    let line, big = '';
+    if (V.ph === 'done') { line = V.bust ? who + ' estourou! Volta para ' + V.left[k] : who + ' fez ' + sum + ' (' + V.darts.map(d => d[2]).join(' · ') + ') · faltam ' + V.left[k]; big = V.bust ? 'ESTOUROU' : sum === 180 ? '180!' : ''; }
+    else {
+      line = 'Rodada ' + Math.min(V.rd, MAXRD) + ' de ' + MAXRD + ' · ' + (me ? 'Sua vez' : 'Vez de ' + nm[k]) + ' · faltam ' + V.left[k] + ' · dardo ' + Math.min(3, V.darts.length + 1) + ' de 3' + (V.darts.length ? ' · ' + V.darts.map(d => d[2]).join(' · ') : '');
+      if (lastD && V.ph === 'aim' && V.tm < 1 && lastD[2] === 'MOSCA') big = 'MOSCA!';
+    }
+    return { board: range(V.n).map(s => ({ n: nm[s], v: String(V.left[s]), c: SEAT_COLS[s], on: s === k && V.win == null })), line, big };
+  };
+  g.winner = V => V.win;
+  g.result = (V, vs) => winTitle(V, vs, V.win, false);
+  g.overText = V => V.left[V.win] === 0 ? 'Zerou os 301 primeiro.' : 'Depois de ' + MAXRD + ' rodadas, ficou mais perto do zero.';
+  return g;
+})();
+
+const GAMES = { pong: Pong, toto: Toto, pool: Pool, botao: Botao, damas: Damas, xadrez: Xadrez, gamao: Gamao, oito: Oito, truco: Truco, poker: Poker, buraco: Buraco, vinte1: Vinte1, airhockey: AirHockey, domino: Domino, ludo: Ludo, roleta: Roleta, general: General, sueca: Sueca, naval: Naval, velha: Velha, ppt: Jokenpo, forca: Forca, dardos: Dardos };
 
 // ================= runtime =================
 // A match has nSeats seats. Seat 0 is the local player (CPU mode) or the host; online guests sit in seats 1…n-1;
@@ -5911,6 +6130,9 @@ function placeCamera(dt, now) {
     const vs = mySideView(), a = G.camAngle ? G.camAngle(vs, nSeats) : (vs == null ? 0 : vs) * TAU / nSeats, d = c.d * (portrait ? k * .66 : 1);
     tx = Math.sin(a) * d; tz = Math.cos(a) * d; ty = c.h * (portrait ? k * .84 : 1);
     camLook.set(Math.sin(a) * c.lz, 0, Math.cos(a) * c.lz);
+  } else if (c.flat) {   // facing a wall (dartboard): straight on, a little further back on a narrow screen
+    tx = 0; ty = c.h; tz = c.d * (portrait ? Math.max(1, .55 / asp) : 1);
+    camLook.set(0, c.ly, c.lz);
   } else {
     const s = mySideView() === 1 && !G.fixedCam ? -1 : 1;
     tx = c.lx || 0; ty = c.h * (portrait ? k * 0.84 : 1); tz = c.d * s * (portrait ? k * 0.66 : 1);
