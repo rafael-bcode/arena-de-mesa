@@ -1227,7 +1227,7 @@ const Toto = (() => {
   const RODS = [[1.0, 0, 1], [0.714, 0, 2], [0.429, 1, 3], [0.143, 0, 3], [-0.143, 1, 3], [-0.429, 0, 3], [-0.714, 1, 2], [-1.0, 1, 1]].map(([z, t, n]) => {
     const sp = 2 * HW / n; return { z, t, n, range: n === 1 ? 0.2 : n === 2 ? 0.2 : 0.14, base: [...Array(n)].map((_, j) => -HW + sp * (j + .5)) };
   });
-  const g = { id: 'toto', realtime: true, planeY: 0.03, fxY: 0.0, halfW: HW, cam: { h: 1.75, d: 1.75, lz: -0.05 },
+  const g = { id: 'toto', realtime: true, planeY: 0.03, fxY: 0.0, halfW: HW, cam: { h: 2.45, d: 2.2, lz: 0.22 },   // far enough back to see both goals
     help: 'Mova o mouse ou arraste para deslizar as varetas · clique, toque ou Espaço para chutar.' };
   let m = {};
   g.build = sc => {
@@ -1634,7 +1634,7 @@ const Pool = (() => {
 const Botao = (() => {
   const HL = 1.05, HW = 0.66, GW = 0.17, BR = 0.028, PR = 0.055, WIN = 3, MAXV = 3.0;
   const FORM = [[0, 0.93], [-0.3, 0.62], [0.3, 0.62], [-0.2, 0.32], [0.2, 0.16]];
-  const g = { id: 'botao', realtime: false, planeY: 0.02, fxY: 0.0, halfW: HW, cam: { h: 2.05, d: 1.55, lz: 0.05 },
+  const g = { id: 'botao', realtime: false, planeY: 0.02, fxY: 0.0, halfW: HW, cam: { h: 2.3, d: 2.0, lz: 0.2 },   // both goals in view
     help: 'Toque num botão seu para escolhê-lo · mire · segure (ou Espaço) e solte para chutar · ←/→ ajusta a mira.' };
   let m = {};
   function numTex(n, col) {
@@ -4024,7 +4024,7 @@ const Vinte1 = (() => {
 // ======================================================================
 const AirHockey = (() => {
   const HL = 1.0, HW = .55, GW = .17, PR = .038, MR = .062, WIN = 7, MSPD = 8, MAXV = 6.2, TOP = .06;
-  const g = { id: 'airhockey', realtime: true, planeY: TOP, fxY: TOP, halfW: HW, cam: { h: 1.55, d: 1.45, lz: .05 },
+  const g = { id: 'airhockey', realtime: true, planeY: TOP, fxY: TOP, halfW: HW, cam: { h: 2.15, d: 1.9, lz: .2 },   // both goals in view
     help: 'Mova o mouse ou arraste o dedo: o taco segue na sua metade · bata no disco com velocidade para chutar forte · 7 gols vencem.' };
   let m = {};
   const sgn = k => k === 0 ? 1 : -1;
