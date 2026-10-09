@@ -395,6 +395,7 @@ input.code{font:700 18px var(--ui);letter-spacing:.38em;text-transform:uppercase
         <button class="btn" id="btnCpu">Jogar contra a CPU</button>
         <button class="btn ghost" id="btnCreate" disabled>Criar sala online</button>
         <div class="seg" id="segN" role="group" aria-label="Jogadores" hidden></div>
+        <div class="seg" id="segOpt" role="group" aria-label="Regra da partida" hidden></div>
         <div class="seg" id="segDiff" role="group" aria-label="Nível da CPU">
           <span>CPU</span>
           <button data-diff="0" aria-pressed="false">Fácil</button>
@@ -6322,10 +6323,19 @@ const CaraCoroa = (() => {
 const Purrinha = (() => {
   const START = 3;
   const g = { id: 'purrinha', multi: true, seats: [2, 3, 4, 5, 6], realtime: false, planeY: TY, fxY: TY, halfW: .6, cam: { h: 1.0, d: .92, lz: -.06 },
-    help: 'Esconda de 0 até os palitos que tem (botões ou teclas) · cada um na sua vez chuta o total de todas as mãos, sem repetir chute · as mãos abrem e a rodada só segue quando todos clicarem em Próxima rodada · quem acerta larga um palito · quem largar todos primeiro vence.' };
+    option: { label: 'Fim', choices: [['primeiro', '1º que zerar'], ['ultimo', 'Até o último']] },
+    help: 'Esconda de 0 até os palitos que tem (botões ou teclas) · cada um na sua vez chuta o total de todas as mãos, sem repetir chute · as mãos abrem e a rodada só segue quando todos clicarem em Próxima rodada · quem acerta larga um palito · Fim: o 1º que zerar vence, ou o jogo segue até sobrar um, que perde (escolha no painel).' };
   let m = {};
   const total = V => V.sticks.reduce((a, b) => a + b, 0);
-  g.init = n => { const st = Math.floor(Math.random() * n); return { n, sticks: Array(n).fill(START), hand: Array(n).fill(-1), guess: Array(n).fill(-1), order: range(n).map(i => (st + i) % n), gi: 0, starter: st, ph: 'hide', tm: 0, rd: 1, res: null, ready: Array(n).fill(false), tn: 0, mid: rid(), win: null }; };
+  const active = V => range(V.n).filter(k => !V.out[k]);
+  // the guessing order for a round: the players still in, starting with the starter
+  const orderFrom = (S, st) => range(S.n).map(i => (st + i) % S.n).filter(k => !S.out[k]);
+  const nextIn = (S, k) => { for (let i = 1; i <= S.n; i++) { const j = (k + i) % S.n; if (!S.out[j]) return j; } return k; };
+  function newRound(S) {
+    S.hand = range(S.n).map(k => S.out[k] ? 0 : -1); S.guess = Array(S.n).fill(-1); S.ready = range(S.n).map(k => S.out[k]);
+    S.order = orderFrom(S, S.starter); S.gi = 0; S.res = null; S.ph = 'hide'; S.tm = 0; S.tn++;
+  }
+  g.init = (n, opt) => { const st = Math.floor(Math.random() * n); return { n, mode: opt === 'ultimo' ? 1 : 0, out: Array(n).fill(false), done: [], loser: -1, sticks: Array(n).fill(START), hand: Array(n).fill(-1), guess: Array(n).fill(-1), order: range(n).map(i => (st + i) % n), gi: 0, starter: st, ph: 'hide', tm: 0, rd: 1, res: null, ready: Array(n).fill(false), tn: 0, mid: rid(), win: null }; };
   g.step = (S, dt, ins) => {
     if (S.win != null) return;
     S.tm += dt;
@@ -6341,7 +6351,7 @@ const Purrinha = (() => {
       const x = num(a[2], -1) | 0;
       if (x < 0 || x > total(S) || S.guess.includes(x)) return;
       S.guess[k] = x; S.gi++; S.tm = 0; S.tn++; ev(S, 'chip', 0, 0, 1, k);
-      if (S.gi >= S.n) {
+      if (S.gi >= S.order.length) {
         const sum = S.hand.reduce((a, b) => a + b, 0), w = S.guess.indexOf(sum);
         S.res = { sum, w }; S.ph = 'show'; S.tn++;
         if (w >= 0) { const p = atSeat(w, S.n, 0, TY, .3); ev(S, 'goal', p.x, p.z, 1, w); } else ev(S, 'check', 0, 0);
@@ -6350,15 +6360,23 @@ const Purrinha = (() => {
       for (let k = 0; k < S.n; k++) { const a = ins[k] && ins[k].next; if (!S.ready[k] && Array.isArray(a) && a[0] === S.mid && a[1] === S.rd) { S.ready[k] = true; S.tn++; } }
       if (!S.ready.every(Boolean) || S.tm < 1) return;
       const w = S.res.w;
-      if (w >= 0) { S.sticks[w]--; if (S.sticks[w] === 0) { S.win = w; return; } }
-      S.starter = w >= 0 ? w : (S.starter + 1) % S.n;
-      S.order = range(S.n).map(i => (S.starter + i) % S.n);
-      S.hand = Array(S.n).fill(-1); S.guess = Array(S.n).fill(-1); S.ready = Array(S.n).fill(false); S.gi = 0; S.res = null; S.rd++; S.ph = 'hide'; S.tm = 0; S.tn++;
+      if (w >= 0) {
+        S.sticks[w]--;
+        if (S.sticks[w] === 0) {
+          S.done.push(w);
+          if (!S.mode) { S.win = w; return; }   // first to empty wins
+          S.out[w] = true;                       // otherwise they're safe, and the rest play on
+          const left = active(S);
+          if (left.length === 1) { S.loser = left[0]; S.win = S.done[0]; return; }
+        }
+      }
+      S.starter = w >= 0 && !S.out[w] ? w : nextIn(S, w >= 0 ? w : S.starter);
+      S.rd++; newRound(S);
     }
   };
   // ---- CPU: knows its own hand; hard also reads what the earlier guesses say about the others' hands ----
   function cpuGuess(S, side) {
-    const own = S.hand[side], others = range(S.n).filter(k => k !== side), maxSum = own + others.reduce((a, k) => a + S.sticks[k], 0);
+    const own = S.hand[side], others = active(S).filter(k => k !== side), maxSum = own + others.reduce((a, k) => a + S.sticks[k], 0);
     const free = range(maxSum - own + 1).map(i => own + i).filter(x => !S.guess.includes(x));
     if (!free.length) return range(total(S) + 1).find(x => !S.guess.includes(x));
     if (diff === 0) return free[Math.floor(Math.random() * free.length)];
@@ -6377,6 +6395,7 @@ const Purrinha = (() => {
     if (mem.key !== key) { mem.key = key; mem.t = 0; mem.wait = .6 + Math.random() * .9; mem.v = null; }
     mem.t += dt;
     if (mem.t < mem.wait) return {};
+    if (S.out[side]) return {};
     if (S.ph === 'hide' && S.hand[side] < 0) { if (mem.v == null) mem.v = Math.floor(Math.random() * (S.sticks[side] + 1)); return { hide: [S.mid, S.rd, mem.v] }; }
     if (S.ph === 'guess' && S.order[S.gi] === side) { if (mem.v == null) mem.v = cpuGuess(S, side); return { guess: [S.mid, S.tn, mem.v] }; }
     if (S.ph === 'show' && !S.ready[side]) return { next: [S.mid, S.rd] };
@@ -6400,20 +6419,21 @@ const Purrinha = (() => {
   };
   g.actions = (V, vs) => {
     if (vs == null || V.win != null || ctl.rd !== V.rd) return [];
+    if (V.out[vs]) return [];
     if (V.ph === 'show' && !V.ready[vs] && !ctl.nx) return [{ id: 'next', label: V.res && V.res.w >= 0 && V.sticks[V.res.w] === 1 ? 'Ver resultado' : 'Próxima rodada', pink: true }];
     if (V.ph === 'hide' && V.hand[vs] < 0 && ctl.h < 0) return range(V.sticks[vs] + 1).map(i => ({ id: 'h' + i, label: String(i), ghost: true }));
     if (V.ph === 'guess' && V.order[V.gi] === vs && !ctl.g) {
       // only the totals that are still possible for me: from my own hand up to everything the others could hold
-      const own = V.hand[vs] >= 0 ? V.hand[vs] : 0, hi = own + range(V.n).filter(k => k !== vs).reduce((a, k) => a + V.sticks[k], 0);
+      const own = V.hand[vs] >= 0 ? V.hand[vs] : 0, hi = own + active(V).filter(k => k !== vs).reduce((a, k) => a + V.sticks[k], 0);
       return range(hi - own + 1).map(i => own + i).filter(x => !V.guess.includes(x)).map(x => ({ id: 'g' + x, label: String(x), pink: true }));
     }
     return [];
   };
-  g.pack = (S, seat) => ({ n: S.n, sticks: S.sticks, hand: S.hand.map((h, k) => k === seat || S.ph === 'show' ? h : h >= 0 ? 9 : -1), guess: S.guess, order: S.order, gi: S.gi, starter: S.starter, ph: S.ph, tm: r3(S.tm), rd: S.rd, res: S.res, ready: S.ready, tn: S.tn, mid: S.mid, win: S.win });
+  g.pack = (S, seat) => ({ n: S.n, mode: S.mode, out: S.out, done: S.done, loser: S.loser, sticks: S.sticks, hand: S.hand.map((h, k) => k === seat || S.ph === 'show' ? h : h >= 0 ? 9 : -1), guess: S.guess, order: S.order, gi: S.gi, starter: S.starter, ph: S.ph, tm: r3(S.tm), rd: S.rd, res: S.res, ready: S.ready, tn: S.tn, mid: S.mid, win: S.win });
   g.unpack = d => {
     const n = sanInt(d.n, 2, 6, 2), R = d.res && typeof d.res === 'object' ? d.res : null;
-    return { n, sticks: A(d.sticks, n, START).map(v => sanInt(v, 0, START, START)), hand: A(d.hand, n, -1).map(v => sanInt(v, -1, 9, -1)), guess: A(d.guess, n, -1).map(v => sanInt(v, -1, 18, -1)),
-      order: A(d.order, n).map(v => sanInt(v, 0, n - 1, 0)), gi: sanInt(d.gi, 0, n, 0), starter: sanInt(d.starter, 0, n - 1, 0), ph: ['hide', 'guess', 'show'].includes(d.ph) ? d.ph : 'hide',
+    return { n, mode: d.mode === 1 ? 1 : 0, out: range(n).map(k => !!(d.out && d.out[k])), done: (Array.isArray(d.done) ? d.done : []).slice(0, n).map(v => sanInt(v, 0, n - 1, 0)), loser: sanInt(d.loser, -1, n - 1, -1), sticks: A(d.sticks, n, START).map(v => sanInt(v, 0, START, START)), hand: A(d.hand, n, -1).map(v => sanInt(v, -1, 9, -1)), guess: A(d.guess, n, -1).map(v => sanInt(v, -1, 18, -1)),
+      order: (Array.isArray(d.order) ? d.order : []).slice(0, n).map(v => sanInt(v, 0, n - 1, 0)), gi: sanInt(d.gi, 0, n, 0), starter: sanInt(d.starter, 0, n - 1, 0), ph: ['hide', 'guess', 'show'].includes(d.ph) ? d.ph : 'hide',
       tm: num(d.tm, 0), rd: num(d.rd, 1), res: R ? { sum: sanInt(R.sum, 0, 18, 0), w: sanInt(R.w, -1, n - 1, -1) } : null, ready: range(n).map(k => !!(d.ready && d.ready[k])), tn: num(d.tn, 0), mid: d.mid, win: d.win != null && d.win >= 0 && d.win < n ? d.win | 0 : null };
   };
   // ---- table: matchsticks, a closed fist per player, each guess floating over its fist ----
@@ -6472,14 +6492,14 @@ const Purrinha = (() => {
       // the fist hovers over its circle and lifts away when the hands open, leaving its sticks inside the circle
       m.lift[s] += ((show ? 1 : 0) - m.lift[s]) * lerpK(dt, 6);
       const f = atSeat(s, n, 0, TY + .045 + m.lift[s] * .16 + (V.ph === 'hide' && V.hand[s] < 0 ? Math.abs(Math.sin(performance.now() / 260 + s)) * .01 : 0), HZ + .02);
-      if (m.lift[s] < .97) { const fo = m.fists.get(String(s)); fo.position.set(f.x, f.y, f.z); fo.rotation.y = a; fo.scale.setScalar(1 - m.lift[s] * .5); }
+      if (m.lift[s] < .97 && !V.out[s]) { const fo = m.fists.get(String(s)); fo.position.set(f.x, f.y, f.z); fo.rotation.y = a; fo.scale.setScalar(1 - m.lift[s] * .5); }
       if (show) for (let i = 0; i < inHand; i++) { const p = atSeat(s, n, (i - (inHand - 1) / 2) * .026, TY + .004, HZ); const st = m.sticks.get('s'); st.position.set(p.x, p.y, p.z); st.rotation.y = a + (i - (inHand - 1) / 2) * .25; }
       // the guess floats above; once open, the hand's count sits beside its circle
       const b = m.bubbles[s];
       b.visible = V.guess[s] >= 0;
       if (b.visible) { const tex = guessTex(V.guess[s], SEAT_COLS[s]); if (b.material.map !== tex) { b.material.map = tex; b.material.needsUpdate = true; } const p = atSeat(s, n, 0, TY + .17, HZ); b.position.set(p.x, p.y, p.z); const hit = show && V.res && V.res.w === s; b.scale.setScalar(hit ? .085 + Math.sin(performance.now() / 120) * .008 : .06); }
       const c = m.counts[s];
-      c.visible = show && m.lift[s] > .6;
+      c.visible = show && m.lift[s] > .6 && !V.out[s];
       if (c.visible) { const tex = guessTex(inHand, '#f4efe3'); if (c.material.map !== tex) { c.material.map = tex; c.material.needsUpdate = true; } const p = atSeat(s, n, -.09, TY + .035, HZ); c.position.set(p.x, p.y, p.z); }
     }
     for (let s = n; s < 6; s++) { m.bubbles[s].visible = false; m.counts[s].visible = false; }
@@ -6497,15 +6517,21 @@ const Purrinha = (() => {
       const k = V.order[V.gi], mine = vs != null && V.hand[vs] >= 0 && V.hand[vs] < 9 ? ' (você tem ' + V.hand[vs] + ' na mão)' : '';
       line = (k === vs ? 'Sua vez: chute o total de palitos' + mine : 'Vez de ' + nm[k] + ' chutar' + mine) + (guesses ? ' · ' + guesses : '');
     } else {
-      const R = V.res, hands = range(V.n).map(k => who(k) + ' ' + V.hand[k]).join(' + ');
+      const R = V.res, hands = active(V).map(k => who(k) + ' ' + V.hand[k]).join(' + ');
       const waiting = vs != null && (V.ready[vs] || ctl.nx) ? ' · esperando ' + range(V.n).filter(k => !V.ready[k] && k !== vs).map(k => nm[k]).join(', ') : '';
       line = 'Mãos: ' + hands + ' = ' + R.sum + ' · ' + (R.w >= 0 ? who(R.w) + ' acertou com ' + R.sum + ' e larga um palito!' : 'ninguém acertou') + waiting;
     }
-    return { board: range(V.n).map(s => ({ n: nm[s], v: V.sticks[s] + (V.sticks[s] === 1 ? ' palito' : ' palitos'), c: SEAT_COLS[s], on: V.win == null && (V.ph === 'guess' ? V.order[V.gi] === s : V.ph === 'hide' && V.hand[s] < 0) })), line, big };
+    if (V.mode && vs != null && V.out[vs] && V.win == null) line = 'Você zerou e está salvo! · ' + line;
+    const place = s => V.done.indexOf(s) + 1;
+    return { board: range(V.n).map(s => ({ n: nm[s], v: V.out[s] ? place(s) + 'º a zerar' : V.sticks[s] + (V.sticks[s] === 1 ? ' palito' : ' palitos'), out: V.out[s], c: SEAT_COLS[s], on: V.win == null && (V.ph === 'guess' ? V.order[V.gi] === s : V.ph === 'hide' && V.hand[s] < 0) })), line, big };
   };
   g.winner = V => V.win;
-  g.result = (V, vs) => winTitle(V, vs, V.win, false);
-  g.overText = () => 'Largou todos os palitos primeiro.';
+  g.result = (V, vs) => {
+    if (!V.mode) return winTitle(V, vs, V.win, false);
+    const nm = names(vs), L = V.loser;   // played to the last: what matters is who was left holding sticks
+    return { title: vs === L ? 'Você ficou por último' : vs == null ? nm[L] + ' ficou por último' : nm[L] + ' ficou por último · você escapou!', won: vs == null ? null : vs !== L };
+  };
+  g.overText = V => !V.mode ? 'Largou todos os palitos primeiro.' : 'Ordem em que zeraram: ' + V.done.map(k => names(mySideView())[k]).join(', ') + '.';
   return g;
 })();
 
@@ -6531,7 +6557,7 @@ function prefSeats(id) {
 }
 const seatLabel = (id, n) => (GAMES[id].seatLabel ? GAMES[id].seatLabel(n) : null) || String(n);
 const range = n => Array.from({ length: n }, (_, i) => i);
-function newMatch(n) { nSeats = n; S = G.init(n); cpuMem = range(n).map(() => ({})); ctl = {}; overMid = null; }
+function newMatch(n) { nSeats = n; S = G.init(n, G.option ? prefOpt(G.id) : undefined); cpuMem = range(n).map(() => ({})); ctl = {}; overMid = null; }
 function stepGame(st, dt, ins) { if (G.multi) G.step(st, dt, ins); else G.step(st, dt, ins[0], ins[1]); }
 
 function disposeScene(sc) {
@@ -6956,6 +6982,22 @@ $('chatIn').addEventListener('keydown', e => { if (e.key === 'Escape') { e.stopP
 $('chatQuick').addEventListener('click', e => { if (e.target.tagName === 'BUTTON') sendChat(e.target.textContent); });
 
 // ================= UI wiring =================
+// a game may offer one rule choice before the match ("option": label + [value, text] choices); the host's choice travels in the state
+function prefOpt(id) {
+  const o = GAMES[id].option; let v = null;
+  try { v = localStorage.getItem('arena.opt.' + id); } catch {}
+  return o.choices.some(c => c[0] === v) ? v : o.choices[0][0];
+}
+function renderOptSeg() {
+  const o = GAMES[selGame].option, seg = $('segOpt'); seg.textContent = '';
+  seg.hidden = !o; if (!o) return;
+  const cur = prefOpt(selGame), sp = document.createElement('span'); sp.textContent = o.label; seg.append(sp);
+  for (const [v, txt] of o.choices) {
+    const b = document.createElement('button'); b.textContent = txt; b.setAttribute('aria-pressed', String(v === cur));
+    b.onclick = () => { try { localStorage.setItem('arena.opt.' + selGame, v); } catch {} renderOptSeg(); if (mode === 'menu') { buildGame(selGame); newMatch(prefSeats(selGame)); } };
+    seg.append(b);
+  }
+}
 function renderSeatSeg() {   // "Jogadores" selector in the side panel, for games that seat more than two
   const opts = seatOpts(selGame), seg = $('segN'); seg.textContent = '';
   seg.hidden = opts.length < 2;
@@ -6975,7 +7017,7 @@ function markCards() {
   $('pickIcon').innerHTML = card.querySelector('svg').outerHTML;
   $('pickCat').textContent = document.querySelector('.tabs [data-cat="' + sec.dataset.cat + '"]').firstChild.textContent.trim();
   document.querySelector('.dock').style.setProperty('--acc', card.style.getPropertyValue('--acc'));
-  renderSeatSeg();
+  renderSeatSeg(); renderOptSeg();
 }
 let homeCat = document.querySelector('.card[data-game="' + selGame + '"]').closest('.cat').dataset.cat;
 try { const c = localStorage.getItem('arena.cat'); if (c && document.querySelector('.tabs [data-cat="' + c + '"]')) homeCat = c; } catch {}
