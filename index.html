@@ -246,7 +246,7 @@ input.code{font:700 18px var(--ui);letter-spacing:.38em;text-transform:uppercase
       <button data-cat="tabuleiro" aria-pressed="false">Tabuleiro <i>5</i></button>
       <button data-cat="baralho" aria-pressed="false">Baralho <i>4</i></button>
       <button data-cat="cassino" aria-pressed="false">Cassino <i>3</i></button>
-      <button data-cat="rapidos" aria-pressed="false">Rápidos <i>3</i></button>
+      <button data-cat="rapidos" aria-pressed="false">Rápidos <i>4</i></button>
     </div>
     <div id="cards">
     <section class="cat" data-cat="real">
@@ -368,6 +368,10 @@ input.code{font:700 18px var(--ui);letter-spacing:.38em;text-transform:uppercase
       <button class="card" data-game="forca" style="--acc:#e2bd6a" aria-pressed="false">
         <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M8 41h18M14 41V7h17v6"/><path d="M14 14l7-7"/><circle cx="31" cy="17" r="4"/><path d="M31 21v9M31 24l-4 4M31 24l4 4M31 30l-3 6M31 30l3 6"/></svg>
         <b>Forca</b><small>Um escolhe a palavra secreta, o outro adivinha letra por letra. Contra a CPU, você adivinha.</small>
+      </button>
+      <button class="card" data-game="parimpar" style="--acc:#3fd39a" aria-pressed="false">
+        <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M14 42V24l-3-6M14 24V9a2.5 2.5 0 0 1 5 0v13M19 22V7a2.5 2.5 0 0 1 5 0v15M24 22V10a2.5 2.5 0 0 1 5 0v14"/><path d="M29 24v-6a2.5 2.5 0 0 1 5 0v10c0 8-4 14-12 14h-8"/><path d="M38 9h6M41 6v6"/></svg>
+        <b>Par ou ímpar</b><small>Um pede par ou ímpar, os dois mostram de 0 a 5 dedos juntos. Quem fizer 3 pontos vence.</small>
       </button>
       </div>
     </section>
@@ -502,7 +506,7 @@ const A = (a, n, d = 0) => { const o = []; for (let i = 0; i < n; i++) o.push(nu
 const PHASE = v => ['count', 'play', 'over'].includes(v) ? v : 'count';
 const angDiff = d => Math.atan2(Math.sin(d), Math.cos(d));
 const COLS = ['#38b6ff', '#ff4f6d'];
-const GAME_NAMES = { pong: 'Ping-pong', toto: 'Totó', pool: 'Sinuca', botao: 'Futebol de botão', damas: 'Damas', xadrez: 'Xadrez', gamao: 'Gamão', oito: 'Oito Maluco', truco: 'Truco', poker: 'Poker', buraco: 'Buraco', vinte1: '21', airhockey: 'Air hockey', domino: 'Dominó', ludo: 'Ludo', roleta: 'Roleta', general: 'General', sueca: 'Sueca', naval: 'Batalha naval', velha: 'Jogo da velha', ppt: 'Pedra, papel e tesoura', forca: 'Forca', dardos: 'Dardos' };
+const GAME_NAMES = { pong: 'Ping-pong', toto: 'Totó', pool: 'Sinuca', botao: 'Futebol de botão', damas: 'Damas', xadrez: 'Xadrez', gamao: 'Gamão', oito: 'Oito Maluco', truco: 'Truco', poker: 'Poker', buraco: 'Buraco', vinte1: '21', airhockey: 'Air hockey', domino: 'Dominó', ludo: 'Ludo', roleta: 'Roleta', general: 'General', sueca: 'Sueca', naval: 'Batalha naval', velha: 'Jogo da velha', ppt: 'Pedra, papel e tesoura', forca: 'Forca', dardos: 'Dardos', parimpar: 'Par ou ímpar' };
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 // CPU difficulty: 0 fácil, 1 normal, 2 difícil — each game's cpu() reads its knobs from here
 let diff = 1;
@@ -692,7 +696,7 @@ let letterPressed = null;   // Forca: the letter typed this frame
 addEventListener('keydown', e => { if (e.target && e.target.tagName === 'INPUT') return; if (e.code === 'KeyQ') keys.qe = -1; if (e.code === 'KeyE') keys.qe = 1; if (e.code === 'KeyR' && !e.repeat && G && G.id === 'naval') rotPressed = true; });
 addEventListener('keyup', e => { if (e.code === 'KeyQ' || e.code === 'KeyE') keys.qe = 0; });
 canvas.addEventListener('wheel', e => { if (G && G.id === 'pong' && mode !== 'menu') { e.preventDefault(); ctl.q = clamp(num(ctl.q, 1.6) + e.deltaY * .0012, .2, 2.1); } }, { passive: false });
-addEventListener('keydown', e => { if (/^Digit[1-9]$/.test(e.code) && !(e.target && e.target.tagName === 'INPUT')) digitPressed[+e.code.slice(5)] = true; });
+addEventListener('keydown', e => { if (/^Digit[0-9]$/.test(e.code) && !(e.target && e.target.tagName === 'INPUT')) digitPressed[+e.code.slice(5)] = true; });
 addEventListener('keydown', e => {
   if (!G || !G.letters || mode === 'menu' || e.ctrlKey || e.metaKey || e.altKey || (e.target && e.target.tagName === 'INPUT')) return;
   const l = /^[a-zç]$/i.test(e.key) ? e.key.toUpperCase().replace('Ç', 'C') : '';
@@ -6039,7 +6043,144 @@ const Dardos = (() => {
   return g;
 })();
 
-const GAMES = { pong: Pong, toto: Toto, pool: Pool, botao: Botao, damas: Damas, xadrez: Xadrez, gamao: Gamao, oito: Oito, truco: Truco, poker: Poker, buraco: Buraco, vinte1: Vinte1, airhockey: AirHockey, domino: Domino, ludo: Ludo, roleta: Roleta, general: General, sueca: Sueca, naval: Naval, velha: Velha, ppt: Jokenpo, forca: Forca, dardos: Dardos };
+// ======================================================================
+// GAME 24: PAR OU ÍMPAR (1x1, quem fizer 3 pontos)
+// ======================================================================
+const ParImpar = (() => {
+  const WIN = 3, BET = ['par', 'ímpar'], HZ = .05, HX = -.1, HY = TY + .1;   // each hand a little to its owner's left: side by side, face to face
+  const g = { id: 'parimpar', multi: true, seats: [2], realtime: false, planeY: TY, fxY: TY, halfW: .6, cam: { h: .4, d: .92, lz: 0, ly: -.025 },
+    help: 'Quem escolhe diz par ou ímpar e o outro fica com o contrário · os dois mostram de 0 a 5 dedos ao mesmo tempo (botões ou teclas 0 a 5) · soma par, ganha quem pediu par · quem fizer 3 pontos vence.' };
+  let m = {};
+  const winnerOf = V => { const s = V.pick[0] + V.pick[1]; return s % 2 === V.bet ? V.ch : 1 - V.ch; };
+  const betOf = (V, k) => k === V.ch ? V.bet : 1 - V.bet;
+  g.init = () => { const c = Math.random() < .5 ? 0 : 1; return { n: 2, ch: c, bet: -1, pick: [-1, -1], ph: 'choose', tm: 0, sc: [0, 0], rd: 1, res: -1, hist: [[], []], tn: 0, mid: rid(), win: null }; };
+  g.step = (S, dt, ins) => {
+    if (S.win != null) return;
+    S.tm += dt;
+    if (S.ph === 'choose') {
+      const a = ins[S.ch] && ins[S.ch].bet;
+      if (Array.isArray(a) && a[0] === S.mid && a[1] === S.rd && (a[2] === 0 || a[2] === 1)) { S.bet = a[2]; S.ph = 'pick'; S.tm = 0; S.tn++; ev(S, 'card', 0, 0, 1, S.ch); }
+    } else if (S.ph === 'pick') {
+      for (const k of [0, 1]) {
+        const a = ins[k] && ins[k].pick;
+        if (S.pick[k] < 0 && Array.isArray(a) && a[0] === S.mid && a[1] === S.rd) { const c = num(a[2], -1) | 0; if (c >= 0 && c <= 5) { S.pick[k] = c; S.tn++; ev(S, 'card', 0, sgnS(k) * .2, 1, k); } }
+      }
+      if (S.pick[0] >= 0 && S.pick[1] >= 0) { S.ph = 'count'; S.tm = 0; S.tn++; }
+    } else if (S.ph === 'count') {   // "Par... ou... ímpar!" — then both hands open together
+      if (S.tm >= 1.8) {
+        S.res = winnerOf(S); S.sc[S.res]++; ev(S, 'goal', 0, sgnS(S.res) * HZ, 1, S.res);
+        S.hist[0].push(S.pick[0]); S.hist[1].push(S.pick[1]); if (S.hist[0].length > 30) { S.hist[0].shift(); S.hist[1].shift(); }
+        S.ph = 'show'; S.tm = 0; S.tn++;
+      }
+    } else if (S.ph === 'show' && S.tm >= 2.8) {
+      if (S.sc[S.res] >= WIN) { S.win = S.res; return; }
+      S.ch = 1 - S.ch; S.bet = -1; S.pick = [-1, -1]; S.res = -1; S.rd++; S.ph = 'choose'; S.tm = 0; S.tn++;
+    }
+  };
+  // ---- CPU: easy and normal play at random (the honest strategy); hard reads the rival's odd/even habit ----
+  g.cpu = (S, side, dt, mem) => {
+    if (S.win != null) return {};
+    if (mem.key !== S.mid + ':' + S.rd + ':' + S.ph) { mem.key = S.mid + ':' + S.rd + ':' + S.ph; mem.t = 0; mem.wait = .6 + Math.random() * 1.0; }
+    mem.t += dt;
+    if (mem.t < mem.wait) return {};
+    if (S.ph === 'choose' && S.ch === side) return { bet: [S.mid, S.rd, Math.random() < .5 ? 0 : 1] };
+    if (S.ph !== 'pick' || S.pick[side] >= 0) return {};
+    if (mem.c == null || mem.crd !== S.rd) {
+      mem.crd = S.rd; mem.c = Math.floor(Math.random() * 6);
+      const h = S.hist[1 - side];
+      if (diff === 2 && h.length >= 4) {   // if the rival leans odd or even, pick the number that makes my parity likelier
+        const odd = h.filter(v => v % 2).length / h.length, want = betOf(S, side), theirs = odd > .6 ? 1 : odd < .4 ? 0 : -1;
+        if (theirs >= 0) { const opts = range(6).filter(x => (x + theirs) % 2 === want); mem.c = opts[Math.floor(Math.random() * opts.length)]; }
+      }
+    }
+    return { pick: [S.mid, S.rd, mem.c] };
+  };
+  g.local = (V, side) => {
+    const act = ctl.act; ctl.act = null;
+    if (ctl.rd !== V.rd || ctl.mid !== V.mid) { ctl.rd = V.rd; ctl.mid = V.mid; ctl.b = -1; ctl.c = -1; }
+    if (V.win == null && V.ph === 'choose' && V.ch === side && ctl.b < 0 && act && act[0] === 'b') { ctl.b = +act[1]; tone(660, .05, { vol: .06 }); }
+    if (V.win == null && V.ph === 'pick' && V.pick[side] < 0 && ctl.c < 0) {
+      let c = act && act[0] === 'n' ? +act[1] : -1;
+      for (let d = 0; d <= 5; d++) if (digitPressed[d]) c = d;
+      if (c >= 0) { ctl.c = c; tone(660, .05, { vol: .06 }); }
+    }
+    return { bet: ctl.b >= 0 ? [V.mid, V.rd, ctl.b] : null, pick: ctl.c >= 0 ? [V.mid, V.rd, ctl.c] : null };
+  };
+  g.actions = (V, vs) => {
+    if (vs == null || V.win != null || ctl.rd !== V.rd) return [];
+    if (V.ph === 'choose' && V.ch === vs && ctl.b < 0) return [{ id: 'b0', label: 'Par', pink: true }, { id: 'b1', label: 'Ímpar' }];
+    if (V.ph === 'pick' && V.pick[vs] < 0 && ctl.c < 0) return range(6).map(i => ({ id: 'n' + i, label: String(i), ghost: true }));
+    return [];
+  };
+  // the rival's number stays secret (6 = "already chose") until the hands open
+  g.pack = (S, seat) => ({ n: 2, ch: S.ch, bet: S.bet, pick: S.pick.map((p, k) => k === seat || S.ph === 'show' ? p : p >= 0 ? 6 : -1), ph: S.ph, tm: r3(S.tm), sc: S.sc, rd: S.rd, res: S.res, hist: S.hist, tn: S.tn, mid: S.mid, win: S.win });
+  g.unpack = d => ({ n: 2, ch: d.ch === 1 ? 1 : 0, bet: sanInt(d.bet, -1, 1, -1), pick: A(d.pick, 2, -1).map(v => sanInt(v, -1, 6, -1)), ph: ['choose', 'pick', 'count', 'show'].includes(d.ph) ? d.ph : 'choose',
+    tm: num(d.tm, 0), sc: A(d.sc, 2).map(v => sanInt(v, 0, 99, 0)), rd: num(d.rd, 1), res: sanInt(d.res, -1, 1, -1),
+    hist: [0, 1].map(k => (Array.isArray(d.hist && d.hist[k]) ? d.hist[k] : []).slice(-30).map(v => sanInt(v, 0, 5, 0))), tn: num(d.tn, 0), mid: d.mid, win: d.win === 0 || d.win === 1 ? d.win : null });
+  // ---- two hands over the table: a fist that pumps three times, then the fingers open ----
+  function makeHand(k) {
+    const root = new THREE.Group(), skin = lacquer('#e9b48f', .55, { clearcoat: .1 }), sleeve = lacquer(COLS[k], .4);
+    const palm = new THREE.Mesh(new THREE.SphereGeometry(1, 28, 18), skin); palm.scale.set(.046, .054, .019); palm.position.y = .045; root.add(palm);   // a rounded palm
+    const arm = new THREE.Group(); arm.rotation.x = .6; root.add(arm);
+    const fore = cyl(.026, .03, .16, skin, 20); fore.position.y = -.08; arm.add(fore);
+    const cuff = cyl(.034, .034, .07, sleeve, 20); cuff.position.y = -.15; arm.add(cuff);
+    // fingers, counting order: index, middle, ring, little; the thumb is the fifth
+    const fingers = [[.031, .05], [.0105, .056], [-.0105, .052], [-.031, .042]].map(([x, L]) => {
+      const pv = new THREE.Group(); pv.position.set(x, .082, 0); root.add(pv);
+      const f = cyl(.0085, .0085, L, skin, 12); f.position.y = L / 2; pv.add(f);
+      const tip = new THREE.Mesh(new THREE.SphereGeometry(.0085, 12, 8), skin); tip.position.y = L; pv.add(tip);
+      return pv;
+    });
+    const th = new THREE.Group(); th.position.set(.042, .035, .004); root.add(th);
+    const tf = cyl(.0095, .0095, .045, skin, 12); tf.position.y = .0225; th.add(tf);
+    const tt = new THREE.Mesh(new THREE.SphereGeometry(.0095, 12, 8), skin); tt.position.y = .045; th.add(tt);
+    fingers.push(th);
+    shadowAll(root);
+    return { root, fingers, open: [0, 0, 0, 0, 0] };
+  }
+  g.build = sc => {
+    buildCardTable(sc, { title: 'PAR OU ÍMPAR' });
+    m = { hands: [0, 1].map(k => { const h = makeHand(k); sc.add(h.root); return h; }) };
+  };
+  g.render = (V, dt) => {
+    const show = V.ph === 'show', k8 = lerpK(dt, 10);
+    for (const k of [0, 1]) {
+      const h = m.hands[k], p = atSeat(k, 2, HX, HY, HZ), n = show ? V.pick[k] : 0;
+      // three pumps on "par... ou... ímpar"
+      const pump = V.ph === 'count' ? Math.abs(Math.sin(V.tm / .6 * Math.PI)) * .05 : 0;
+      h.root.position.set(p.x, HY + pump, p.z); h.root.rotation.set(0, p.ry + Math.PI, 0);
+      h.fingers.forEach((f, i) => {
+        h.open[i] += ((i < n ? 1 : 0) - h.open[i]) * k8;
+        const u = h.open[i];
+        if (i < 4) f.rotation.x = (1 - u) * 1.85;   // curl toward the palm
+        else { f.rotation.z = -(.25 + .45 * u); f.rotation.x = (1 - u) * 1.1; }   // the thumb tucks across
+      });
+    }
+    return null;
+  };
+  g.hud = (V, vs) => {
+    const nm = names(vs);
+    let line, big = '';
+    const role = vs != null && V.bet >= 0 ? 'Você é ' + BET[betOf(V, vs)].toUpperCase() + ' · ' : '';
+    if (V.ph === 'choose') line = 'Rodada ' + V.rd + ' · ' + (vs === V.ch ? (ctl.b >= 0 && ctl.rd === V.rd ? 'Você pediu ' + BET[ctl.b] : 'Você escolhe: par ou ímpar?') : nm[V.ch] + ' está escolhendo par ou ímpar…');
+    else if (V.ph === 'pick') {
+      const mine = vs != null && (V.pick[vs] >= 0 ? V.pick[vs] : ctl.rd === V.rd ? ctl.c : -1);
+      line = role + (vs == null ? 'escolhendo…' : mine >= 0 ? 'Você vai mostrar ' + mine + (mine === 1 ? ' dedo' : ' dedos') + ' · ' + (V.pick[1 - vs] >= 0 ? nm[1 - vs] + ' também já escolheu' : 'esperando ' + nm[1 - vs]) : 'quantos dedos? (0 a 5)' + (V.pick[1 - vs] >= 0 ? ' · ' + nm[1 - vs] + ' já escolheu' : ''));
+    } else if (V.ph === 'count') { line = role + 'Par ou ímpar!'; big = ['PAR…', 'OU…', 'ÍMPAR!'][Math.min(2, Math.floor(V.tm / .6))]; }
+    else {
+      const s = V.pick[0] + V.pick[1], par = s % 2 === 0;
+      big = V.pick[0] + ' + ' + V.pick[1] + ' = ' + s;
+      line = (par ? 'Deu par' : 'Deu ímpar') + '! Ponto ' + (vs === V.res ? 'seu' : 'de ' + nm[V.res]);
+    }
+    return { sc: V.sc, line, big };
+  };
+  g.winner = V => V.win;
+  g.result = (V, vs) => Object.assign(winTitle(V, vs, V.win, false), { score: V.sc[0] + ' : ' + V.sc[1] });
+  g.overText = () => 'Fez 3 pontos primeiro.';
+  return g;
+})();
+
+const GAMES = { pong: Pong, toto: Toto, pool: Pool, botao: Botao, damas: Damas, xadrez: Xadrez, gamao: Gamao, oito: Oito, truco: Truco, poker: Poker, buraco: Buraco, vinte1: Vinte1, airhockey: AirHockey, domino: Domino, ludo: Ludo, roleta: Roleta, general: General, sueca: Sueca, naval: Naval, velha: Velha, ppt: Jokenpo, forca: Forca, dardos: Dardos, parimpar: ParImpar };
 
 // ================= runtime =================
 // A match has nSeats seats. Seat 0 is the local player (CPU mode) or the host; online guests sit in seats 1…n-1;
@@ -6129,7 +6270,7 @@ function placeCamera(dt, now) {
   } else if (G.multi && !G.fixedCam) {   // sit at the viewer's seat, looking across the table
     const vs = mySideView(), a = G.camAngle ? G.camAngle(vs, nSeats) : (vs == null ? 0 : vs) * TAU / nSeats, d = c.d * (portrait ? k * .66 : 1);
     tx = Math.sin(a) * d; tz = Math.cos(a) * d; ty = c.h * (portrait ? k * .84 : 1);
-    camLook.set(Math.sin(a) * c.lz, 0, Math.cos(a) * c.lz);
+    camLook.set(Math.sin(a) * c.lz, c.ly || 0, Math.cos(a) * c.lz);
   } else if (c.flat) {   // facing a wall (dartboard): straight on, a little further back on a narrow screen
     tx = 0; ty = c.h; tz = c.d * (portrait ? Math.max(1, .55 / asp) : 1);
     camLook.set(0, c.ly, c.lz);
