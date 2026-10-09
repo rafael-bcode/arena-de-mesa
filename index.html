@@ -246,7 +246,7 @@ input.code{font:700 18px var(--ui);letter-spacing:.38em;text-transform:uppercase
       <button data-cat="tabuleiro" aria-pressed="false">Tabuleiro <i>5</i></button>
       <button data-cat="baralho" aria-pressed="false">Baralho <i>4</i></button>
       <button data-cat="cassino" aria-pressed="false">Cassino <i>3</i></button>
-      <button data-cat="rapidos" aria-pressed="false">Rápidos <i>4</i></button>
+      <button data-cat="rapidos" aria-pressed="false">Rápidos <i>5</i></button>
     </div>
     <div id="cards">
     <section class="cat" data-cat="real">
@@ -372,6 +372,10 @@ input.code{font:700 18px var(--ui);letter-spacing:.38em;text-transform:uppercase
       <button class="card" data-game="parimpar" style="--acc:#3fd39a" aria-pressed="false">
         <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M14 42V24l-3-6M14 24V9a2.5 2.5 0 0 1 5 0v13M19 22V7a2.5 2.5 0 0 1 5 0v15M24 22V10a2.5 2.5 0 0 1 5 0v14"/><path d="M29 24v-6a2.5 2.5 0 0 1 5 0v10c0 8-4 14-12 14h-8"/><path d="M38 9h6M41 6v6"/></svg>
         <b>Par ou ímpar</b><small>Um pede par ou ímpar, os dois mostram de 0 a 5 dedos juntos. Quem fizer 3 pontos vence.</small>
+      </button>
+      <button class="card" data-game="moeda" style="--acc:#e2bd6a" aria-pressed="false">
+        <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><ellipse cx="22" cy="26" rx="15" ry="15"/><circle cx="22" cy="26" r="9"/><path d="M21 22l2-1.5V31"/><path d="M38 6c3 2 4 6 2 9M35 9c1.5 1 2 3 1 4.5"/></svg>
+        <b>Cara ou coroa</b><small>Um pede cara ou coroa, o outro joga a moeda. Quem fizer 3 pontos vence.</small>
       </button>
       </div>
     </section>
@@ -506,7 +510,7 @@ const A = (a, n, d = 0) => { const o = []; for (let i = 0; i < n; i++) o.push(nu
 const PHASE = v => ['count', 'play', 'over'].includes(v) ? v : 'count';
 const angDiff = d => Math.atan2(Math.sin(d), Math.cos(d));
 const COLS = ['#38b6ff', '#ff4f6d'];
-const GAME_NAMES = { pong: 'Ping-pong', toto: 'Totó', pool: 'Sinuca', botao: 'Futebol de botão', damas: 'Damas', xadrez: 'Xadrez', gamao: 'Gamão', oito: 'Oito Maluco', truco: 'Truco', poker: 'Poker', buraco: 'Buraco', vinte1: '21', airhockey: 'Air hockey', domino: 'Dominó', ludo: 'Ludo', roleta: 'Roleta', general: 'General', sueca: 'Sueca', naval: 'Batalha naval', velha: 'Jogo da velha', ppt: 'Pedra, papel e tesoura', forca: 'Forca', dardos: 'Dardos', parimpar: 'Par ou ímpar' };
+const GAME_NAMES = { pong: 'Ping-pong', toto: 'Totó', pool: 'Sinuca', botao: 'Futebol de botão', damas: 'Damas', xadrez: 'Xadrez', gamao: 'Gamão', oito: 'Oito Maluco', truco: 'Truco', poker: 'Poker', buraco: 'Buraco', vinte1: '21', airhockey: 'Air hockey', domino: 'Dominó', ludo: 'Ludo', roleta: 'Roleta', general: 'General', sueca: 'Sueca', naval: 'Batalha naval', velha: 'Jogo da velha', ppt: 'Pedra, papel e tesoura', forca: 'Forca', dardos: 'Dardos', parimpar: 'Par ou ímpar', moeda: 'Cara ou coroa' };
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 // CPU difficulty: 0 fácil, 1 normal, 2 difícil — each game's cpu() reads its knobs from here
 let diff = 1;
@@ -859,6 +863,7 @@ function playEv(e) {
       break;
     case 'dart': if (!quiet) { noise(.045, .3 * v + .1, pan, 1500); tone(150, .07, { type: 'triangle', vol: .14 * v + .04, pan }); } break;
     case 'cheer': if (!quiet) { [523, 659, 784, 1047].forEach((f, i) => tone(f, .2, { type: 'triangle', vol: .12, delay: i * .1 })); noise(.8, .12, 0, 1200); } break;
+    case 'coin': if (!quiet) { const hi = v > .7; for (let i = 0; i < (hi ? 3 : 4); i++) tone(rnd(2600, 3300), hi ? .09 : .04, { type: 'triangle', vol: hi ? .07 : .06, pan, delay: i * (hi ? .05 : .07) }); } break;
     case 'dice':
       if (!quiet) for (let i = 0; i < 7; i++) tone(rnd(1700, 2700), .025, { type: 'square', vol: .05 * (1 - i / 8), pan: pan + rnd(-.2, .2), delay: i * .14 + rnd(0, .05) });
       break;
@@ -6180,7 +6185,134 @@ const ParImpar = (() => {
   return g;
 })();
 
-const GAMES = { pong: Pong, toto: Toto, pool: Pool, botao: Botao, damas: Damas, xadrez: Xadrez, gamao: Gamao, oito: Oito, truco: Truco, poker: Poker, buraco: Buraco, vinte1: Vinte1, airhockey: AirHockey, domino: Domino, ludo: Ludo, roleta: Roleta, general: General, sueca: Sueca, naval: Naval, velha: Velha, ppt: Jokenpo, forca: Forca, dardos: Dardos, parimpar: ParImpar };
+// ======================================================================
+// GAME 25: CARA OU COROA (1x1: um pede, o outro joga a moeda; quem fizer 3 pontos)
+// ======================================================================
+const CaraCoroa = (() => {
+  const WIN = 3, FACE = ['cara', 'coroa'], FLIP = 2.1, TURNS = 7, CR = .085, CT = .011, HUP = .2;   // a big coin, so both faces read from the chair
+  const g = { id: 'moeda', multi: true, seats: [2], realtime: false, planeY: TY, fxY: TY, halfW: .6, cam: { h: .5, d: .56, lz: .16 },
+    help: 'Quem pede escolhe cara ou coroa · o outro joga a moeda (botão, clique na mesa ou Espaço) · acertou, ponto de quem pediu; errou, de quem jogou · quem fizer 3 pontos vence.' };
+  let m = {};
+  g.init = () => { const c = Math.random() < .5 ? 0 : 1; return { n: 2, caller: c, call: -1, res: 0, won: -1, ph: 'call', tm: 0, sc: [0, 0], rd: 1, tn: 0, mid: rid(), win: null }; };
+  g.step = (S, dt, ins) => {
+    if (S.win != null) return;
+    S.tm += dt;
+    const tosser = 1 - S.caller;
+    if (S.ph === 'call') {
+      const a = ins[S.caller] && ins[S.caller].call;
+      if (Array.isArray(a) && a[0] === S.mid && a[1] === S.rd && (a[2] === 0 || a[2] === 1)) { S.call = a[2]; S.ph = 'toss'; S.tm = 0; S.tn++; ev(S, 'card', 0, 0, 1, S.caller); }
+    } else if (S.ph === 'toss') {
+      const a = ins[tosser] && ins[tosser].toss;
+      if (Array.isArray(a) && a[0] === S.mid && a[1] === S.rd && S.tm > .3) { S.res = Math.random() < .5 ? 0 : 1; S.ph = 'flip'; S.tm = 0; S.tn++; ev(S, 'coin', 0, 0, 1, tosser); }
+    } else if (S.ph === 'flip') {
+      if (S.tm >= FLIP) { S.won = S.res === S.call ? S.caller : tosser; S.sc[S.won]++; S.ph = 'show'; S.tm = 0; S.tn++; ev(S, 'coin', 0, 0, .5, S.won); ev(S, 'goal', 0, 0, 1, S.won); }
+    } else if (S.ph === 'show' && S.tm >= 2.6) {
+      if (S.sc[S.won] >= WIN) { S.win = S.won; return; }
+      S.caller = 1 - S.caller; S.call = -1; S.won = -1; S.rd++; S.ph = 'call'; S.tm = 0; S.tn++;
+    }
+  };
+  g.cpu = (S, side, dt, mem) => {
+    if (S.win != null) return {};
+    if (mem.key !== S.mid + ':' + S.rd + ':' + S.ph) { mem.key = S.mid + ':' + S.rd + ':' + S.ph; mem.t = 0; mem.wait = .7 + Math.random() * .9; mem.c = Math.random() < .5 ? 0 : 1; }
+    mem.t += dt;
+    if (mem.t < mem.wait) return {};
+    if (S.ph === 'call' && S.caller === side) return { call: [S.mid, S.rd, mem.c] };
+    if (S.ph === 'toss' && S.caller !== side) return { toss: [S.mid, S.rd] };
+    return {};
+  };
+  g.local = (V, side) => {
+    const act = ctl.act; ctl.act = null;
+    if (ctl.rd !== V.rd || ctl.mid !== V.mid) { ctl.rd = V.rd; ctl.mid = V.mid; ctl.c = -1; ctl.t = false; }
+    if (V.win == null && V.ph === 'call' && V.caller === side && ctl.c < 0 && act && act[0] === 'f') { ctl.c = +act[1]; tone(660, .05, { vol: .06 }); }
+    if (V.win == null && V.ph === 'toss' && V.caller !== side && !ctl.t && (act === 'toss' || ptr.pressed)) ctl.t = true;
+    return { call: ctl.c >= 0 ? [V.mid, V.rd, ctl.c] : null, toss: ctl.t ? [V.mid, V.rd] : null };
+  };
+  g.actions = (V, vs) => {
+    if (vs == null || V.win != null || ctl.rd !== V.rd) return [];
+    if (V.ph === 'call' && V.caller === vs && ctl.c < 0) return [{ id: 'f0', label: 'Cara', pink: true }, { id: 'f1', label: 'Coroa' }];
+    if (V.ph === 'toss' && V.caller !== vs && !ctl.t) return [{ id: 'toss', label: 'Jogar a moeda', pink: true }];
+    return [];
+  };
+  g.pack = S => ({ n: 2, caller: S.caller, call: S.call, res: S.res, won: S.won, ph: S.ph, tm: r3(S.tm), sc: S.sc, rd: S.rd, tn: S.tn, mid: S.mid, win: S.win });
+  g.unpack = d => ({ n: 2, caller: d.caller === 1 ? 1 : 0, call: sanInt(d.call, -1, 1, -1), res: d.res === 1 ? 1 : 0, won: sanInt(d.won, -1, 1, -1), ph: ['call', 'toss', 'flip', 'show'].includes(d.ph) ? d.ph : 'call',
+    tm: num(d.tm, 0), sc: A(d.sc, 2).map(v => sanInt(v, 0, 99, 0)), rd: num(d.rd, 1), tn: num(d.tn, 0), mid: d.mid, win: d.win === 0 || d.win === 1 ? d.win : null });
+  // ---- a bimetal coin in the style of the real: gold ring, silver centre ----
+  function face(kind) {
+    return canvasTex(512, 512, (c, w) => {
+      const cx = w / 2;
+      c.translate(cx, cx); c.rotate(kind === 0 ? -Math.PI / 2 : Math.PI / 2); c.translate(-cx, -cx);   // caps map the canvas a quarter turn round (the bottom one also lies flipped)
+      const gold = c.createRadialGradient(cx - 60, cx - 80, 40, cx, cx, 256);
+      gold.addColorStop(0, '#f6dc8a'); gold.addColorStop(1, '#b8862c');
+      c.fillStyle = gold; c.beginPath(); c.arc(cx, cx, 256, 0, TAU); c.fill();
+      c.strokeStyle = 'rgba(90,60,10,.5)'; c.lineWidth = 3; c.beginPath(); c.arc(cx, cx, 246, 0, TAU); c.stroke();
+      const silver = c.createRadialGradient(cx - 50, cx - 60, 20, cx, cx, 175); silver.addColorStop(0, '#f4f6f8'); silver.addColorStop(1, '#9ea5ae');
+      c.fillStyle = silver; c.beginPath(); c.arc(cx, cx, 172, 0, TAU); c.fill();
+      c.strokeStyle = 'rgba(60,40,10,.55)'; c.lineWidth = 4; c.stroke();
+      // lettering on the ring
+      c.fillStyle = '#6b4a14'; c.font = '700 30px Georgia, serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
+      const ring = (txt, a0, span) => [...txt].forEach((ch, i, arr) => { const a = a0 + span * (i / Math.max(1, arr.length - 1) - .5); c.save(); c.translate(cx + Math.sin(a) * 212, cx - Math.cos(a) * 212); c.rotate(a); c.fillText(ch, 0, 0); c.restore(); });
+      if (kind === 0) {
+        ring('BRASIL', 0, 1.1);
+        // the Republic's profile, wreathed
+        c.fillStyle = '#7d848e';
+        c.beginPath(); c.ellipse(cx + 8, cx + 4, 62, 78, -.15, 0, TAU); c.fill();
+        c.beginPath(); c.moveTo(cx - 52, cx - 4); c.quadraticCurveTo(cx - 78, cx + 8, cx - 56, cx + 22); c.lineTo(cx - 46, cx + 30); c.lineTo(cx - 60, cx + 44); c.quadraticCurveTo(cx - 44, cx + 70, cx - 10, cx + 78); c.lineTo(cx - 20, cx + 120); c.lineTo(cx + 60, cx + 120); c.lineTo(cx + 54, cx + 60); c.closePath(); c.fill();
+        c.fillStyle = '#5f6670'; for (let i = 0; i < 9; i++) { const a = -2.3 + i * .32; c.beginPath(); c.ellipse(cx + 8 + Math.cos(a) * 66, cx + 4 + Math.sin(a) * 80, 16, 7, a + 1.2, 0, TAU); c.fill(); }
+        c.fillStyle = '#e8ebef'; c.beginPath(); c.arc(cx - 30, cx - 10, 5, 0, TAU); c.fill();
+      } else {
+        ring('REPÚBLICA FEDERATIVA', Math.PI, 2.6);
+        c.fillStyle = '#4a5058'; c.font = '800 190px Georgia, serif'; c.fillText('1', cx - 10, cx - 18);
+        c.font = '700 54px Georgia, serif'; c.fillText('REAL', cx, cx + 92);
+        c.font = '600 30px Georgia, serif'; c.fillText('2026', cx, cx - 128);
+        c.fillStyle = '#6b7079'; for (let i = 0; i < 5; i++) { const a = .7 + i * .2; c.beginPath(); c.arc(cx + Math.sin(a) * 140, cx - Math.cos(a) * 140, 6, 0, TAU); c.fill(); }   // the stars
+      }
+    });
+  }
+  g.build = sc => {
+    buildCardTable(sc, { title: 'CARA OU COROA' });
+    const edge = canvasTex(512, 16, (c, w, h) => { c.fillStyle = '#c9a04a'; c.fillRect(0, 0, w, h); c.fillStyle = 'rgba(80,55,10,.55)'; for (let x = 0; x < w; x += 6) c.fillRect(x, 0, 2, h); });
+    const mats = [lacquer('#ffffff', .25, { map: edge, metalness: .9 }), lacquer('#ffffff', .3, { map: face(0), metalness: .75 }), lacquer('#ffffff', .3, { map: face(1), metalness: .75 })];
+    const coin = new THREE.Mesh(new THREE.CylinderGeometry(CR, CR, CT, 72), mats); coin.castShadow = true; coin.receiveShadow = true;
+    const pivot = new THREE.Group(); pivot.add(coin); sc.add(pivot);
+    m = { pivot, coin, pos: null };
+  };
+  const restSpot = V => { const p = atSeat(1 - V.caller, 2, .12, TY, .2); return { x: p.x, z: p.z }; };
+  g.render = (V, dt, o) => {
+    const tm = V.tm + (o.el || 0), up = V.res === 1 ? Math.PI : 0;
+    let x, y, z, rx, rz = 0;
+    if (V.ph === 'flip') {   // up from the tosser's hand, spinning, down onto the middle of the table with the drawn face up
+      const u = clamp(tm / FLIP, 0, 1), from = restSpot(V);
+      x = from.x * (1 - u); z = from.z * (1 - u); y = TY + CT / 2 + Math.sin(Math.PI * u) * HUP;
+      rx = (TURNS * TAU + up) * (1 - (1 - u) * (1 - u));
+      m.pos = { x, z };
+    } else {
+      const tgt = V.ph === 'show' ? { x: 0, z: 0 } : restSpot(V);
+      if (!m.pos) m.pos = { x: tgt.x, z: tgt.z };
+      const k = lerpK(dt, 5); m.pos.x += (tgt.x - m.pos.x) * k; m.pos.z += (tgt.z - m.pos.z) * k;
+      x = m.pos.x; z = m.pos.z; y = TY + CT / 2; rx = up;
+      if (V.ph === 'show') rz = Math.exp(-tm * 5) * Math.sin(tm * 30) * .12;   // a little wobble as it settles
+    }
+    m.pivot.position.set(x, y, z); m.coin.rotation.set(rx, 0, rz);
+    // the face is drawn upright for whoever is watching
+    m.pivot.rotation.y = seatAng(o.local ? o.side : 0, 2);
+    return null;
+  };
+  g.hud = (V, vs) => {
+    const nm = names(vs), tosser = 1 - V.caller, who = k => vs === k ? 'Você' : nm[k];
+    let line, big = '';
+    if (V.ph === 'call') line = 'Rodada ' + V.rd + ' · ' + (vs === V.caller ? (ctl.c >= 0 && ctl.rd === V.rd ? 'Você pediu ' + FACE[ctl.c] : 'Você pede: cara ou coroa?') : nm[V.caller] + ' está escolhendo…');
+    else if (V.ph === 'toss') line = who(V.caller) + ' pediu ' + FACE[V.call].toUpperCase() + ' · ' + (vs === tosser ? 'jogue a moeda!' : nm[tosser] + ' vai jogar a moeda');
+    else if (V.ph === 'flip') line = who(V.caller) + ' pediu ' + FACE[V.call] + ' · a moeda está no ar…';
+    else { big = V.res ? 'COROA!' : 'CARA!'; line = 'Deu ' + FACE[V.res] + '! Ponto ' + (vs === V.won ? 'seu' : 'de ' + nm[V.won]); }
+    return { sc: V.sc, line, big };
+  };
+  g.winner = V => V.win;
+  g.result = (V, vs) => Object.assign(winTitle(V, vs, V.win, false), { score: V.sc[0] + ' : ' + V.sc[1] });
+  g.overText = () => 'Fez 3 pontos primeiro.';
+  return g;
+})();
+
+const GAMES = { pong: Pong, toto: Toto, pool: Pool, botao: Botao, damas: Damas, xadrez: Xadrez, gamao: Gamao, oito: Oito, truco: Truco, poker: Poker, buraco: Buraco, vinte1: Vinte1, airhockey: AirHockey, domino: Domino, ludo: Ludo, roleta: Roleta, general: General, sueca: Sueca, naval: Naval, velha: Velha, ppt: Jokenpo, forca: Forca, dardos: Dardos, parimpar: ParImpar, moeda: CaraCoroa };
 
 // ================= runtime =================
 // A match has nSeats seats. Seat 0 is the local player (CPU mode) or the host; online guests sit in seats 1…n-1;
