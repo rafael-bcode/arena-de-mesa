@@ -161,6 +161,13 @@ input.code{font:700 18px var(--ui);letter-spacing:.38em;text-transform:uppercase
 .manbody ul{margin:0;padding-left:20px;display:grid;gap:7px;font-size:14.5px;line-height:1.5}
 .manbody p{margin:0;font-size:14.5px;line-height:1.5}
 @media (max-width:560px){.manbox{padding:16px}.manhead h2{font-size:20px}#manIcon svg{width:34px;height:34px}.howto{padding:5px 8px;font-size:10px}}
+.manfoot{display:grid;gap:10px;border-top:1px solid var(--line);padding-top:12px}
+.manoptq{margin:0 0 8px;font:700 12px var(--ui);letter-spacing:.16em;text-transform:uppercase;color:var(--gold)}
+#manOptList{grid-template-columns:1fr 1fr}
+.manskip{display:flex;gap:8px;align-items:center;color:var(--dim);font-size:13px;cursor:pointer}
+.manskip input{accent-color:var(--gold);width:16px;height:16px}
+.manbtns{display:flex;gap:10px;justify-content:flex-end}
+@media (max-width:560px){#manOptList{grid-template-columns:1fr}.manbtns .btn{flex:1}}
 .optList{display:grid;gap:8px;width:100%}
 .optList button{all:unset;cursor:pointer;display:grid;gap:3px;padding:12px 14px;border:1px solid var(--line);border-radius:8px;background:#0e1018;text-align:left}
 .optList button b{font:700 15px var(--ui);color:var(--ink)}
@@ -414,7 +421,7 @@ input.code{font:700 18px var(--ui);letter-spacing:.38em;text-transform:uppercase
       <div class="pick">
         <span id="pickIcon" aria-hidden="true"></span>
         <div><p class="eyebrow" id="pickCat">Tempo real</p><h3 id="pickedName">Ping-pong</h3></div>
-        <button class="howto" id="btnHow" title="Como jogar, regras e dicas">Como jogar</button>
+        <button class="howto" id="btnHow" title="Como jogar, regras e dicas">Ler as regras</button>
         <p id="pickDesc"></p>
       </div>
       <div class="actions">
@@ -495,8 +502,12 @@ input.code{font:700 18px var(--ui);letter-spacing:.38em;text-transform:uppercase
       <div><p class="eyebrow" id="manCat"></p><h2 id="manTitle"></h2><p class="manmeta" id="manMeta"></p></div>
       <button class="chip" id="btnManClose" aria-label="Fechar">Fechar</button>
     </div>
-    <label class="manpick">Ver outro jogo <select id="manPick"></select></label>
     <div class="manbody" id="manBody"></div>
+    <div class="manfoot" id="manFoot" hidden>
+      <div id="manOpt" hidden><p class="manoptq" id="manOptQ"></p><div class="optList" id="manOptList" role="group"></div></div>
+      <label class="manskip"><input type="checkbox" id="manSkip"> Não mostrar as regras antes de jogar este jogo</label>
+      <div class="manbtns"><button class="btn ghost" id="btnManBack">Voltar</button><button class="btn pink" id="btnManGo">Começar</button></div>
+    </div>
   </div>
 </div>
 
@@ -7441,7 +7452,7 @@ document.querySelectorAll('.card[data-game]').forEach(c => c.addEventListener('c
   if (mode === 'menu') { buildGame(selGame); newMatch(prefSeats(selGame)); }
 }));
 // ---- manual ("Como jogar") ----
-let manPaused = false;
+let manPaused = false, manStart = null;
 function playersText(id) {
   const st = GAMES[id].seats || [2], lo = Math.min(...st), hi = Math.max(...st);
   const n = lo === hi ? lo + (lo === 1 ? ' jogador' : ' jogadores') : (hi - lo + 1 === st.length ? lo + ' a ' + hi : st.join(' ou ')) + ' jogadores';   // 2 a 6, or 2 ou 4
@@ -7453,7 +7464,6 @@ function fillManual(id) {
   $('manCat').textContent = document.querySelector('.tabs [data-cat="' + cat.dataset.cat + '"]').firstChild.textContent.trim();
   $('manTitle').textContent = GAME_NAMES[id];
   $('manMeta').textContent = playersText(id) + ' · contra a CPU ou online';
-  $('manPick').value = id;
   const body = $('manBody'); body.textContent = '';
   const obj = document.createElement('p'); obj.className = 'manobj'; obj.textContent = M.obj; body.append(obj);
   const section = (title, items) => {
@@ -7464,22 +7474,15 @@ function fillManual(id) {
   section('Como jogar', M.como); section('Regras', M.regras); section('Estratégia e dicas', M.dicas); section('Jogando online', M.online);
   body.scrollTop = 0;
 }
-function openManual(id) {
-  if (!$('manPick').options.length) {   // every game, grouped by the home tabs
-    document.querySelectorAll('#cards .cat').forEach(sec => {
-      const og = document.createElement('optgroup'); og.label = document.querySelector('.tabs [data-cat="' + sec.dataset.cat + '"]').firstChild.textContent.trim();
-      sec.querySelectorAll('.card[data-game]').forEach(c => { const o = document.createElement('option'); o.value = c.dataset.game; o.textContent = GAME_NAMES[c.dataset.game]; og.append(o); });
-      $('manPick').append(og);
-    });
-  }
+function openManual(id, start) {
   manPaused = mode === 'cpu' && !paused && $('over').hidden; if (manPaused) togglePause(true);   // reading the rules mid-game stops the clock
-  fillManual(id); $('manual').hidden = false; $('btnManClose').focus();
+  $('manFoot').hidden = !start;   // always the one game being looked at or played
+  fillManual(id); $('manual').hidden = false; (start ? $('btnManGo') : $('btnManClose')).focus();
 }
-function closeManual() { $('manual').hidden = true; if (manPaused && paused) togglePause(false); manPaused = false; if (mode !== 'menu') canvas.focus(); }
+function closeManual() { $('manual').hidden = true; $('manFoot').hidden = true; manStart = null; if (manPaused && paused) togglePause(false); manPaused = false; if (mode !== 'menu') canvas.focus(); }
 $('btnHow').onclick = () => openManual(selGame);
 $('btnHowIn').onclick = () => openManual(G ? G.id : selGame);
 $('btnManClose').onclick = closeManual;
-$('manPick').onchange = e => fillManual(e.target.value);
 $('manual').addEventListener('click', e => { if (e.target.id === 'manual') closeManual(); });
 // while the manual is open the keyboard belongs to it: Esc closes, nothing reaches the game
 addEventListener('keydown', e => { if ($('manual').hidden) return; if (e.key === 'Escape') { e.preventDefault(); closeManual(); } e.stopImmediatePropagation(); }, true);
@@ -7500,14 +7503,42 @@ function askOption(then) {
   $('btnOptGo').onclick = () => { try { localStorage.setItem('arena.opt.' + selGame, cur); } catch {} $('optBox').hidden = true; renderOptSeg(); then(); };
   $('btnOptBack').onclick = () => { $('optBox').hidden = true; };
 }
-$('btnCreate').onclick = () => askOption(createRoom);
+// before a match: the rules (and the game's rule choice, if it has one), unless the player opted out for this game
+const skipRules = id => { try { return localStorage.getItem('arena.skiprules.' + id) === '1'; } catch { return false; } };
+function preGame(then) {
+  const id = selGame, o = GAMES[id].option;
+  if (skipRules(id)) return askOption(then);
+  let cur = o ? prefOpt(id) : null;
+  $('manOpt').hidden = !o;
+  if (o) {
+    $('manOptQ').textContent = o.ask || o.label;
+    const list = $('manOptList'); list.textContent = '';
+    const paint = () => list.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === cur)));
+    for (const [v, txt, desc] of o.choices) {
+      const b = document.createElement('button'); b.type = 'button'; b.dataset.v = v;
+      const t = document.createElement('b'); t.textContent = txt; const d = document.createElement('small'); d.textContent = desc || '';
+      b.append(t, d); b.onclick = () => { cur = v; paint(); }; list.append(b);
+    }
+    paint();
+  }
+  $('manSkip').checked = false;
+  $('btnManGo').textContent = then === createRoom ? 'Criar a sala' : 'Começar';
+  manStart = () => {
+    try { if (o) localStorage.setItem('arena.opt.' + id, cur); if ($('manSkip').checked) localStorage.setItem('arena.skiprules.' + id, '1'); } catch {}
+    renderOptSeg(); then();
+  };
+  openManual(id, true);
+}
+$('btnManGo').onclick = () => { const go = manStart; closeManual(); if (go) go(); };
+$('btnManBack').onclick = closeManual;
+$('btnCreate').onclick = () => preGame(createRoom);
 $('btnJoin').onclick = joinRoom;
 $('btnStart').onclick = () => { if (mode === 'host' && !started && seats.some(Boolean)) startMatch(); };
 $('nickIn').value = myNick;
 $('nickIn').addEventListener('input', e => { myNick = cleanNick(e.target.value); try { localStorage.setItem('arena.nick', myNick); } catch {} });
 $('codeIn').addEventListener('input', e => { e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4); });
 $('codeIn').addEventListener('keydown', e => { if (e.key === 'Enter' && !$('btnJoin').disabled) joinRoom(); });
-$('btnCpu').onclick = () => askOption(startCpu);
+$('btnCpu').onclick = () => preGame(startCpu);
 async function startCpu() {
   initAudio(); $('homeErr').hidden = true; await leaveRoom();
   mode = 'cpu'; buildGame(selGame); newMatch(prefSeats(selGame)); V = null;
