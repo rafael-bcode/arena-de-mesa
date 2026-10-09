@@ -143,6 +143,12 @@ input.code{font:700 18px var(--ui);letter-spacing:.38em;text-transform:uppercase
 .pbar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--a),var(--gold),var(--b))}
 #acts{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(46px + env(safe-area-inset-bottom,0px));z-index:3;display:flex;gap:8px;flex-wrap:wrap;justify-content:center;width:max-content;max-width:calc(100vw - 32px)}
 #acts .btn{box-shadow:0 10px 30px -12px var(--a)}
+.optList{display:grid;gap:8px;width:100%}
+.optList button{all:unset;cursor:pointer;display:grid;gap:3px;padding:12px 14px;border:1px solid var(--line);border-radius:8px;background:#0e1018;text-align:left}
+.optList button b{font:700 15px var(--ui);color:var(--ink)}
+.optList button small{font:500 13px var(--ui);color:var(--dim)}
+.optList button[aria-pressed="true"]{border-color:var(--gold);background:rgba(226,189,106,.12)}
+.optList button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 #kbd{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(40px + env(safe-area-inset-bottom,0px));z-index:3;display:flex;flex-direction:column;gap:5px;align-items:center}
 #kbd[hidden]{display:none}
 #kbd div{display:flex;gap:5px}
@@ -459,6 +465,17 @@ input.code{font:700 18px var(--ui);letter-spacing:.38em;text-transform:uppercase
     <button class="btn pink" type="submit">Usar esta palavra</button>
     <button class="btn ghost" type="button" id="btnWordRandom">Sortear uma para mim</button>
   </form>
+</div>
+
+<!-- A game with a rule to pick asks for it when the match starts -->
+<div class="ov dlg" id="optBox" hidden>
+  <div class="box">
+    <p class="eyebrow" id="optEye"></p>
+    <h2 id="optTitle"></h2>
+    <div class="optList" id="optList" role="group"></div>
+    <button class="btn pink" id="btnOptGo">Começar</button>
+    <button class="btn ghost" id="btnOptBack">Voltar</button>
+  </div>
 </div>
 
 <!-- Opened from a room link: pick a name before joining -->
@@ -6323,7 +6340,7 @@ const CaraCoroa = (() => {
 const Purrinha = (() => {
   const START = 3;
   const g = { id: 'purrinha', multi: true, seats: [2, 3, 4, 5, 6], realtime: false, planeY: TY, fxY: TY, halfW: .6, cam: { h: 1.0, d: .92, lz: -.06 },
-    option: { label: 'Fim', choices: [['primeiro', '1º que zerar'], ['ultimo', 'Até o último']] },
+    option: { label: 'Fim', ask: 'Como termina a partida?', choices: [['primeiro', '1º que zerar', 'Quem largar todos os palitos primeiro vence. A partida acaba na hora.'], ['ultimo', 'Até o último', 'Quem zera sai salvo e os outros continuam. O último que sobrar com palitos perde.']] },
     help: 'Esconda de 0 até os palitos que tem (botões ou teclas) · cada um na sua vez chuta o total de todas as mãos, sem repetir chute · as mãos abrem e a rodada só segue quando todos clicarem em Próxima rodada · quem acerta larga um palito · Fim: o 1º que zerar vence, ou o jogo segue até sobrar um, que perde (escolha no painel).' };
   let m = {};
   const total = V => V.sticks.reduce((a, b) => a + b, 0);
@@ -7033,18 +7050,35 @@ document.querySelectorAll('.card[data-game]').forEach(c => c.addEventListener('c
   markCards();
   if (mode === 'menu') { buildGame(selGame); newMatch(prefSeats(selGame)); }
 }));
-$('btnCreate').onclick = createRoom;
+// games with a rule to pick ask for it right when the match starts (the side panel keeps the same choice)
+function askOption(then) {
+  const o = GAMES[selGame].option; if (!o) return then();
+  let cur = prefOpt(selGame);
+  $('optEye').textContent = GAME_NAMES[selGame].toUpperCase(); $('optTitle').textContent = o.ask || o.label;
+  const list = $('optList'); list.textContent = '';
+  const paint = () => list.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === cur)));
+  for (const [v, txt, desc] of o.choices) {
+    const b = document.createElement('button'); b.type = 'button'; b.dataset.v = v;
+    const t = document.createElement('b'); t.textContent = txt; const d = document.createElement('small'); d.textContent = desc || '';
+    b.append(t, d); b.onclick = () => { cur = v; paint(); }; list.append(b);
+  }
+  paint(); $('optBox').hidden = false; $('btnOptGo').focus();
+  $('btnOptGo').onclick = () => { try { localStorage.setItem('arena.opt.' + selGame, cur); } catch {} $('optBox').hidden = true; renderOptSeg(); then(); };
+  $('btnOptBack').onclick = () => { $('optBox').hidden = true; };
+}
+$('btnCreate').onclick = () => askOption(createRoom);
 $('btnJoin').onclick = joinRoom;
 $('btnStart').onclick = () => { if (mode === 'host' && !started && seats.some(Boolean)) startMatch(); };
 $('nickIn').value = myNick;
 $('nickIn').addEventListener('input', e => { myNick = cleanNick(e.target.value); try { localStorage.setItem('arena.nick', myNick); } catch {} });
 $('codeIn').addEventListener('input', e => { e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4); });
 $('codeIn').addEventListener('keydown', e => { if (e.key === 'Enter' && !$('btnJoin').disabled) joinRoom(); });
-$('btnCpu').onclick = async () => {
+$('btnCpu').onclick = () => askOption(startCpu);
+async function startCpu() {
   initAudio(); $('homeErr').hidden = true; await leaveRoom();
   mode = 'cpu'; buildGame(selGame); newMatch(prefSeats(selGame)); V = null;
   showDialog(null); showGameUi(true); canvas.focus();
-};
+}
 const roomLink = () => location.href.split('#')[0] + '#sala=' + code;
 $('btnShare').hidden = !navigator.share;
 $('btnShare').onclick = () => { navigator.share({ title: 'Arena de Mesa · ' + GAME_NAMES[G.id], text: 'Bora jogar ' + GAME_NAMES[G.id] + '? Sala ' + code, url: roomLink() }).catch(() => {}); };
