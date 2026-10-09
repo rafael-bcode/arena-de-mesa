@@ -143,6 +143,24 @@ input.code{font:700 18px var(--ui);letter-spacing:.38em;text-transform:uppercase
 .pbar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--a),var(--gold),var(--b))}
 #acts{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(46px + env(safe-area-inset-bottom,0px));z-index:3;display:flex;gap:8px;flex-wrap:wrap;justify-content:center;width:max-content;max-width:calc(100vw - 32px)}
 #acts .btn{box-shadow:0 10px 30px -12px var(--a)}
+.pick{grid-template-columns:auto 1fr auto}
+.howto{all:unset;cursor:pointer;align-self:start;font:700 11px var(--ui);letter-spacing:.12em;text-transform:uppercase;color:var(--gold);border:1px solid rgba(226,189,106,.45);border-radius:999px;padding:6px 10px;white-space:nowrap}
+.howto:hover{background:rgba(226,189,106,.12)}
+.howto:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.manbox{max-width:720px;width:100%;max-height:calc(100vh - 32px);text-align:left;align-items:stretch;gap:12px;padding:20px 22px}
+.manhead{display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:center}
+.manhead h2{margin:2px 0 0;font-family:var(--display);font-size:24px;line-height:1.1}
+#manIcon svg{width:42px;height:42px}
+.manmeta{margin:4px 0 0;color:var(--dim);font-size:13px}
+.manpick{display:flex;gap:10px;align-items:center;color:var(--dim);font-size:13px}
+.manpick select{flex:1;font:600 14px var(--ui);padding:8px 10px;border-radius:6px;border:1px solid var(--line);background:#0e1018;color:var(--ink)}
+.manbody{overflow:auto;padding-right:8px;scrollbar-width:thin;scrollbar-color:#3a3f52 transparent}
+.manbody::-webkit-scrollbar{width:8px}.manbody::-webkit-scrollbar-thumb{background:#3a3f52;border-radius:8px}
+.manbody .manobj{margin:0;font-size:15.5px;line-height:1.5;padding:12px 14px;border-left:3px solid var(--gold);background:rgba(226,189,106,.08);border-radius:6px}
+.manbody h3{font:700 12px var(--ui);letter-spacing:.16em;text-transform:uppercase;color:var(--gold);margin:18px 0 8px}
+.manbody ul{margin:0;padding-left:20px;display:grid;gap:7px;font-size:14.5px;line-height:1.5}
+.manbody p{margin:0;font-size:14.5px;line-height:1.5}
+@media (max-width:560px){.manbox{padding:16px}.manhead h2{font-size:20px}#manIcon svg{width:34px;height:34px}.howto{padding:5px 8px;font-size:10px}}
 .optList{display:grid;gap:8px;width:100%}
 .optList button{all:unset;cursor:pointer;display:grid;gap:3px;padding:12px 14px;border:1px solid var(--line);border-radius:8px;background:#0e1018;text-align:left}
 .optList button b{font:700 15px var(--ui);color:var(--ink)}
@@ -215,6 +233,7 @@ input.code{font:700 18px var(--ui);letter-spacing:.38em;text-transform:uppercase
     <div class="chips">
       <span class="net" id="net" hidden><i class="dot" id="dot"></i><span id="netTxt"></span></span>
       <button class="chip" id="btnGhost" aria-pressed="true" hidden>Bola invisível</button>
+      <button class="chip" id="btnHowIn" title="Como jogar, regras e dicas">Regras</button>
       <button class="chip" id="btnPause" aria-pressed="false" hidden>Pausa</button>
       <button class="chip" id="btnHq" aria-pressed="true" title="Alto: brilho e sombras suaves · Leve: mais rápido em celulares">Gráficos: alto</button>
       <button class="chip" id="btnSound" aria-pressed="true">Som</button>
@@ -395,6 +414,7 @@ input.code{font:700 18px var(--ui);letter-spacing:.38em;text-transform:uppercase
       <div class="pick">
         <span id="pickIcon" aria-hidden="true"></span>
         <div><p class="eyebrow" id="pickCat">Tempo real</p><h3 id="pickedName">Ping-pong</h3></div>
+        <button class="howto" id="btnHow" title="Como jogar, regras e dicas">Como jogar</button>
         <p id="pickDesc"></p>
       </div>
       <div class="actions">
@@ -465,6 +485,19 @@ input.code{font:700 18px var(--ui);letter-spacing:.38em;text-transform:uppercase
     <button class="btn pink" type="submit">Usar esta palavra</button>
     <button class="btn ghost" type="button" id="btnWordRandom">Sortear uma para mim</button>
   </form>
+</div>
+
+<!-- How to play: objective, controls, rules, tips — for every game -->
+<div class="ov dlg" id="manual" hidden>
+  <div class="box manbox" role="dialog" aria-modal="true" aria-labelledby="manTitle">
+    <div class="manhead">
+      <span id="manIcon" aria-hidden="true"></span>
+      <div><p class="eyebrow" id="manCat"></p><h2 id="manTitle"></h2><p class="manmeta" id="manMeta"></p></div>
+      <button class="chip" id="btnManClose" aria-label="Fechar">Fechar</button>
+    </div>
+    <label class="manpick">Ver outro jogo <select id="manPick"></select></label>
+    <div class="manbody" id="manBody"></div>
+  </div>
 </div>
 
 <!-- A game with a rule to pick asks for it when the match starts -->
@@ -6552,6 +6585,363 @@ const Purrinha = (() => {
   return g;
 })();
 
+// ======================================================================
+// MANUAIS: como jogar, regras e estratégia de cada jogo (o que vale aqui na Arena)
+// ======================================================================
+const MANUAL = {
+  pong: {
+    obj: 'Fazer 11 pontos com pelo menos 2 de vantagem sobre o adversário, numa mesa de ping-pong em tamanho real.',
+    como: ['A raquete fica exatamente sob o cursor (ou o dedo): mexa para os lados e para cima ou para baixo. As setas do teclado também movem.',
+      'A roda do mouse ou as teclas Q e E aproximam ou afastam a raquete da rede.',
+      'Para rebater, basta a raquete estar no caminho da bola. O ponto da raquete onde a bola bate define o ângulo: na ponta ela sai cruzada, no meio sai reta. Empurrar a raquete em direção à rede no momento da batida (roda do mouse ou Q) dá mais força.'],
+    regras: ['O saque é automático, a partir da raquete de quem saca. O saque troca a cada 2 pontos (e a cada ponto a partir de 10 a 10).',
+      'A bola tem que quicar uma vez no lado do adversário. Não há paredes: bola que sai da mesa pelos lados é ponto.',
+      'Você perde o ponto se: a bola sair sem quicar do outro lado ("fora"), bater na rede ou quicar no seu próprio lado, quicar duas vezes no seu lado ("dois quiques") ou você não devolver ("não devolveu").',
+      'A cada rebatida a bola fica um pouco mais rápida.'],
+    dicas: ['Fique no centro e um pouco acima da mesa: é mais fácil ir aos cantos dali.',
+      'Pegue a bola com a ponta da raquete para mandá-la em diagonal, longe do adversário.',
+      'Se a bola vier muito rápida, afaste a raquete da rede (roda do mouse ou E) para ganhar tempo.'],
+    online: '2 jogadores, cada um controla a própria raquete; na sua tela ela responde na hora, sem esperar a internet.'
+  },
+  toto: {
+    obj: 'Marcar 5 gols antes do adversário no pebolim (totó).',
+    como: ['Mova o mouse (ou arraste o dedo) para os lados: todas as suas varetas deslizam juntas.',
+      'Clique, toque ou aperte Espaço para chutar: todos os seus bonecos giram e batem na bola.'],
+    regras: ['Cada time tem quatro varetas: goleiro, defesa, meio-campo e ataque, intercaladas com as do adversário.',
+      'A bola entra pela lateral no começo e depois de cada gol, alternando o lado.',
+      'Gol é a bola entrar no gol do adversário. Quem chegar a 5 gols vence.'],
+    dicas: ['Chute no momento em que a bola passa na frente de um boneco seu: o chute é curto e rápido.',
+      'Deixe o goleiro alinhado com a bola quando ela vier na sua direção, em vez de chutar à toa.',
+      'Bolas paradas perto do seu ataque são as melhores chances: alinhe e chute de primeira.'],
+    online: '2 jogadores, em tempo real.'
+  },
+  airhockey: {
+    obj: 'Marcar 7 gols no gol do adversário com o disco.',
+    como: ['Mova o mouse ou arraste o dedo: o taco segue o ponteiro, sempre dentro da sua metade da mesa.',
+      'Bata no disco com o taco em movimento: quanto mais rápido o taco, mais forte o disco sai.'],
+    regras: ['O disco desliza quase sem atrito e rebate nas bordas.',
+      'Gol é o disco entrar na abertura do gol do adversário. Quem chegar a 7 vence.',
+      'Se o disco ficar parado ou preso num canto, ele é empurrado de volta ao jogo depois de alguns segundos.'],
+    dicas: ['Proteja o gol voltando o taco para a frente dele depois de cada ataque.',
+      'Use a tabela: chutes que batem na lateral chegam ao gol por um ângulo difícil de defender.',
+      'Não persiga o disco no campo do adversário (o taco não passa do meio): espere ele voltar e ataque com força.'],
+    online: '2 jogadores, em tempo real.'
+  },
+  pool: {
+    obj: 'Encaçapar todas as bolas do seu grupo (lisas 1 a 7 ou listradas 9 a 15) e depois a bola 8.',
+    como: ['Mire com o mouse ou o dedo: o taco aponta da bola branca para onde você aponta. As setas ← → fazem ajuste fino.',
+      'Segure o botão (ou Espaço) para carregar a força; a barra mostra a força. Solte para tacar.'],
+    regras: ['Na abertura a mesa está "aberta": o primeiro jogador que encaçapar uma bola fica com o grupo dela (lisas ou listradas) e o outro com o grupo restante.',
+      'Encaçapou uma bola sua, joga de novo. Não encaçapou, a vez passa.',
+      'Faltas (a vez passa): encaçapar a bola branca (ela volta à mesa), não acertar nenhuma bola, ou tocar primeiro numa bola que não é do seu grupo.',
+      'A bola 8 só pode ser encaçapada depois de limpar o seu grupo, e acertando-a primeiro. Encaçapá-la antes, ou junto com a branca, ou numa jogada com falta, perde a partida na hora.',
+      'É uma partida única: quem encaçapar a 8 corretamente vence.'],
+    dicas: ['Mire na bola-alvo de modo que a linha da branca passe "atrás" dela, do lado oposto à caçapa.',
+      'Força média é a mais precisa: força máxima espalha as bolas e pode mandar a branca para a caçapa.',
+      'Com o seu grupo quase limpo, pense onde a branca vai parar para a próxima tacada.'],
+    online: '2 jogadores, alternando as tacadas; quem está assistindo vê a mira do outro em tempo real.'
+  },
+  dardos: {
+    obj: 'Zerar exatamente os 301 pontos antes dos outros jogadores.',
+    como: ['Mire com o mouse: a mira mostra onde o dardo vai; a mão balança um pouco o tempo todo.',
+      'Segure o botão (ou Espaço) para firmar a mão: por cerca de um segundo o balanço quase some. Solte para arremessar.',
+      'Segurar demais faz a mão tremer cada vez mais: solte no momento certo. As setas também movem a mira.'],
+    regras: ['Cada jogador começa com 301 e joga 3 dardos por vez; os pontos de cada dardo são descontados.',
+      'Setores de 1 a 20; o anel fino de fora vale o dobro (D) e o anel fino do meio vale o triplo (T). O centro verde vale 25 e a mosca (vermelho) vale 50.',
+      'Tem que zerar exato. Se um dardo deixar o placar abaixo de zero, você estoura: a vez acaba e o placar volta ao que era no começo da vez.',
+      'Se ninguém zerar em 10 rodadas, vence quem estiver mais perto do zero.'],
+    dicas: ['No começo, mire no triplo 20 (T20, logo abaixo do número 20, no anel do meio): vale 60.',
+      'Perto do fim, faça a conta antes: com 40, um duplo 20 fecha; com 50, a mosca fecha; ímpar baixo, mire no número exato.',
+      'Firme a mão e solte entre meio segundo e um segundo depois de apertar.'],
+    online: '2 a 4 jogadores, um de cada vez; todos veem a mira de quem está arremessando.'
+  },
+  botao: {
+    obj: 'Fazer 3 gols no futebol de botão.',
+    como: ['Toque (ou clique) num botão seu para escolhê-lo como chutador.',
+      'Mire com o mouse; segure (ou Espaço) para carregar a força e solte para chutar. As setas ← → ajustam a mira.'],
+    regras: ['Cada time tem 5 botões. Os jogadores alternam: cada um faz um chute por vez.',
+      'O chute acerta a bolinha (ou outros botões) e tudo rola e rebate até parar; então a vez passa.',
+      'Gol é a bolinha entrar no gol do adversário; depois do gol os times voltam à formação e quem sofreu o gol sai jogando.',
+      'Quem marcar 3 gols vence.'],
+    dicas: ['Escolha o botão mais bem posicionado atrás da bolinha, alinhado com o gol.',
+      'Chute com força moderada: a bolinha rebate nos botões e nas bordas e pode voltar contra você.',
+      'Quando não der para atacar, use um chute para tirar a bolinha da frente do seu gol.'],
+    online: '2 jogadores, alternando os chutes.'
+  },
+  naval: {
+    obj: 'Afundar os 5 navios do adversário antes que ele afunde os seus.',
+    como: ['Montagem: clique num navio e clique de novo onde quer deixá-lo (ou arraste). R, clique direito ou o botão Girar navio giram o navio que está na mão.',
+      'Uma marca verde mostra onde o navio cabe; vermelha, onde ele não pode ficar. Embaralhar navios sorteia uma frota nova. Aperte Pronto quando terminar.',
+      'Batalha: na sua vez, toque numa casa do mar do adversário para atirar.'],
+    regras: ['Frota: porta-aviões (5 casas), encouraçado (4), dois cruzadores (3) e destróier (2).',
+      'Navios não podem se encostar, nem pela diagonal.',
+      'Água (pino branco) passa a vez. Acerto (pino vermelho) dá direito a outro tiro.',
+      'Quando todas as casas de um navio são atingidas ele afunda e aparece no mar. Quem afundar a frota inteira vence.'],
+    dicas: ['Atire em xadrez (uma casa sim, outra não): todo navio ocupa pelo menos 2 casas, então nenhum escapa.',
+      'Acertou? Tente as casas vizinhas até achar a direção, depois siga em linha.',
+      'Como navios não se encostam, as casas em volta de um navio afundado são água: não gaste tiros nelas.'],
+    online: '2 jogadores; a sua frota nunca é enviada ao adversário, só os tiros e os navios afundados.'
+  },
+  general: {
+    obj: 'Somar mais pontos que os outros preenchendo as 10 casas da tabela com os dados, ou fazer um General de boca.',
+    como: ['Aperte Rolar (ou toque nos dados). Você pode rolar até 3 vezes por vez.',
+      'Entre as rolagens, toque num dado para segurá-lo (ele não é rolado de novo).',
+      'Depois toque numa casa livre da tabela para marcar os pontos daquela jogada.'],
+    regras: ['Casas de 1 a 6: soma dos dados com aquele número (ex.: três 4 na casa Quatro = 12).',
+      'Seguida (sequência 1-2-3-4-5, 2-3-4-5-6 ou 3-4-5-6-1) vale 20; Full (uma trinca e um par) vale 30; Quadra (4 iguais) vale 40; General (5 iguais) vale 50.',
+      'Combinação feita na primeira rolagem ("de boca") vale 5 a mais. General de boca vence o jogo na hora.',
+      'Toda vez você precisa marcar uma casa, mesmo que valha zero. Depois das 10 rodadas, vence quem somar mais.'],
+    dicas: ['Guarde as casas de 1 e 2 para "descartar" jogadas ruins: elas valem pouco de qualquer jeito.',
+      'Com uma trinca na primeira rolagem, segure-a e role o resto: pode virar Full, Quadra ou General.',
+      'Seguida pede dados todos diferentes: só vale insistir se já tiver 4 da sequência.'],
+    online: 'De 1 (solitário) a 6 jogadores, um de cada vez; todos veem os dados e a tabela.'
+  },
+  damas: {
+    obj: 'Capturar ou bloquear todas as peças do adversário, nas regras brasileiras de damas.',
+    como: ['Toque numa peça sua e depois na casa de destino. As casas possíveis aparecem marcadas.',
+      'Numa captura múltipla, toque na casa final: o caminho é feito sozinho.'],
+    regras: ['Tabuleiro 8x8, 12 peças para cada lado, só nas casas escuras.',
+      'A peça comum anda uma casa na diagonal, para a frente, e captura pulando sobre a peça adversária, para a frente ou para trás.',
+      'A captura é obrigatória, e é obrigatório fazer a sequência que captura mais peças.',
+      'Peça que chega à última fileira vira dama: anda e captura várias casas na diagonal (dama voadora).',
+      'Vence quem deixar o adversário sem peças ou sem nenhum movimento. Se houver 20 lances de dama de cada lado sem captura, é empate.'],
+    dicas: ['Mantenha as peças juntas e a fileira de trás ocupada no começo: ela impede o adversário de fazer dama.',
+      'Use a captura obrigatória a seu favor: ofereça uma peça para forçar o adversário a um lance que abre caminho para você.',
+      'A dama vale muito: chegar à última fileira costuma decidir a partida.'],
+    online: '2 jogadores.'
+  },
+  xadrez: {
+    obj: 'Dar xeque-mate no rei adversário.',
+    como: ['Toque numa peça sua e depois na casa de destino; os lances possíveis aparecem marcados.',
+      'Se uma peça não pode se mover (por exemplo, por estar cravada), o jogo mostra o motivo.'],
+    regras: ['Valem todas as regras oficiais: roque (curto e longo), en passant e promoção. O peão que chega ao fim do tabuleiro vira dama.',
+      'Xeque: o rei está atacado e você tem que tirá-lo do ataque. Xeque-mate: não há como, e a partida acaba.',
+      'Empates: afogamento (sem lances legais e sem estar em xeque), regra dos 50 lances sem captura nem movimento de peão, e material insuficiente para dar mate.'],
+    dicas: ['Abertura: domine o centro com os peões, desenvolva cavalos e bispos e faça o roque cedo.',
+      'Antes de cada lance, olhe o que o adversário ameaça.',
+      'Troque peças quando estiver à frente em material; evite trocas quando estiver atrás.'],
+    online: '2 jogadores; as brancas começam.'
+  },
+  gamao: {
+    obj: 'Levar suas 15 pedras para a sua casa (o último quadrante) e retirá-las todas do tabuleiro antes do adversário.',
+    como: ['Role os dados pelo botão, tocando no tabuleiro ou com Espaço.',
+      'Toque numa pedra sua e depois no destino marcado. Com todas em casa, toque na bandeja à direita para retirar.'],
+    regras: ['Cada dado é um movimento separado; dados iguais (duplo) valem quatro movimentos.',
+      'Você pode parar em casas vazias, nas suas ou numa casa com uma só pedra do adversário (isso a captura e manda para a barra). Casas com 2 ou mais pedras adversárias estão bloqueadas.',
+      'Pedra na barra tem que entrar de volta antes de qualquer outro movimento.',
+      'É obrigatório usar o máximo de dados possível; se só um pode ser usado, tem que ser o maior.',
+      'Só se retira pedras quando as 15 estão em casa. Um dado maior que o necessário retira a pedra mais distante.',
+      'Vence quem retirar as 15 pedras primeiro.'],
+    dicas: ['Evite deixar pedras sozinhas ao alcance do adversário: elas podem ir para a barra.',
+      'Construa "pontos" (2 ou mais pedras) em sequência para bloquear o adversário.',
+      'Quando estiver bem à frente na corrida, separe-se do adversário e só corra.'],
+    online: '2 jogadores; todos veem os dados rolando.'
+  },
+  ludo: {
+    obj: 'Levar seus 4 peões da base até o centro do tabuleiro antes dos outros.',
+    como: ['Aperte Rolar dado (ou Espaço) e depois toque no peão que vai andar; os que podem andar ficam destacados. Mover o peão anda com o único peão possível.'],
+    regras: ['Só sai da base quem tirar 6.',
+      'Tirou 6, joga de novo. Três 6 seguidos perdem a vez.',
+      'Cair numa casa com peão adversário o manda de volta para a base (e dá uma jogada extra). As casas com estrela são seguras: nelas ninguém é capturado.',
+      'Depois de dar a volta, o peão entra na reta da sua cor e precisa do número exato para chegar ao centro. Chegar ao centro também dá jogada extra.',
+      'Vence quem levar os 4 peões ao centro.'],
+    dicas: ['Tire peões da base sempre que puder: mais peões na pista dão mais opções.',
+      'Pare nas estrelas quando houver adversário logo atrás.',
+      'Capturar um peão adiantado do adversário vale mais que avançar um pouco o seu.'],
+    online: '2 a 4 jogadores, cada um com sua cor.'
+  },
+  oito: {
+    obj: 'Ser o primeiro a se livrar de todas as cartas.',
+    como: ['Toque numa carta da sua mão para jogá-la. Se jogar um 8, escolha o naipe nos botões.',
+      'Sem carta para jogar, toque em Comprar carta; se a comprada também não servir, toque em Passar a vez.'],
+    regras: ['2 jogadores recebem 7 cartas; 3 ou 4 jogadores recebem 5.',
+      'Você joga uma carta do mesmo naipe ou do mesmo número da carta de cima da mesa.',
+      'O 8 é curinga: pode ser jogado sobre qualquer carta e quem joga escolhe o naipe que vale a seguir.',
+      'Compra-se uma carta por vez. Se o monte acabar, a mesa é embaralhada e vira monte de novo.',
+      'Quem zerar a mão primeiro vence.'],
+    dicas: ['Guarde os 8 para quando não tiver outra saída.',
+      'Ao jogar um 8, escolha o naipe que você mais tem na mão.',
+      'Quando alguém estiver com poucas cartas, mude o naipe para um que ele provavelmente não tem.'],
+    online: '2 a 4 jogadores; cada um vê só a própria mão.'
+  },
+  truco: {
+    obj: 'Chegar a 12 pontos no truco paulista, sozinho (1x1) ou em duplas.',
+    como: ['Toque numa carta para jogá-la na vaza.',
+      'Use o botão Truco! para pedir aumento (depois vêm Seis!, Nove! e Doze!). Quando pedirem para você: Aceitar, pedir mais (Seis!, Nove!, Doze!) ou Correr.'],
+    regras: ['Baralho de 40 cartas (sem 8, 9 e 10). Ordem do mais fraco ao mais forte: 4, 5, 6, 7, Q, J, K, A, 2, 3.',
+      'Manilha virada: vira-se uma carta, e as manilhas são as cartas logo acima dela. Entre as manilhas, por naipe: ♣ zap > ♥ copas > ♠ espadilha > ♦ pica-fumo.',
+      'Cada jogador recebe 3 cartas; quem ganha 2 das 3 vazas leva a mão. Vaza empatada: vale quem ganhou a primeira; se a primeira empatou, vale quem ganhar a seguinte.',
+      'A mão vale 1 ponto. Truco faz valer 3; depois 6, 9 e 12. Quem corre de um pedido entrega os pontos que a mão valia antes.',
+      'Mão de onze: quando um lado tem 11 pontos, a mão vale 3 e ninguém pode pedir truco.',
+      'Nas duplas, o parceiro senta à sua frente. Quem chegar a 12 pontos vence.'],
+    dicas: ['Guarde a manilha mais forte para a vaza decisiva.',
+      'Peça truco quando tiver ganho a primeira vaza e ainda tiver carta forte: a pressão faz o outro correr.',
+      'Blefar funciona, mas a CPU difícil também blefa: não corra sempre.'],
+    online: '1x1 ou duplas (4 jogadores); cada um vê só as próprias cartas.'
+  },
+  sueca: {
+    obj: 'Em duplas, fazer mais de 60 dos 120 pontos de cada jogo; a primeira dupla a ganhar 4 jogos vence a partida.',
+    como: ['Toque numa carta para jogá-la. As cartas que você não pode jogar ficam apagadas.'],
+    regras: ['4 jogadores em duplas, parceiro à frente; baralho de 40 cartas, 10 para cada um.',
+      'A última carta distribuída fica à mostra e define o trunfo (o naipe mais forte).',
+      'É obrigatório seguir o naipe puxado. Sem ele, joga-se qualquer carta, inclusive trunfo.',
+      'A vaza é de quem jogar o trunfo mais alto ou, sem trunfo, a carta mais alta do naipe puxado. Ordem: 2, 3, 4, 5, 6, Q, J, K, 7, A.',
+      'Pontos das cartas: A = 11, 7 = 10, K = 4, J = 3, Q = 2 (as outras valem zero). Total de 120 por jogo.',
+      '61 a 90 pontos vale 1 jogo; 91 a 119 vale 2; fazer os 120 vale 4. Quem chegar a 4 jogos vence.'],
+    dicas: ['Ases e setes valem quase tudo: não os jogue em vazas que o adversário vai ganhar.',
+      'Quando o parceiro está ganhando a vaza, "carregue" pontos nela (jogue um A ou 7 do naipe).',
+      'Conte os trunfos que já saíram para saber quando os seus mandam na mesa.'],
+    online: '4 jogadores em duplas; a CPU completa os lugares vazios.'
+  },
+  buraco: {
+    obj: 'Fazer pontos baixando sequências e canastras e bater primeiro; vence quem chegar a 500 pontos.',
+    como: ['No começo da vez, compre do monte ou pegue o lixo (a pilha de descarte) pelos botões ou tocando nela.',
+      'Toque nas cartas da mão para selecioná-las e use Baixar jogo; para encaixar num jogo da sua dupla, selecione as cartas e toque no jogo.',
+      'Termine a vez descartando uma carta (selecione e use Descartar).'],
+    regras: ['Dois baralhos (104 cartas). Cada jogador recebe 11 cartas e há dois mortos de 11 cartas, um para cada lado.',
+      'Jogos são sequências de 3 ou mais cartas do mesmo naipe. O 2 é curinga, mas cada jogo aceita só um 2 fora do lugar.',
+      'Pegar o lixo leva a pilha inteira para a mão.',
+      'Canastra é um jogo com 7 cartas ou mais: limpa (sem curinga) vale 200 pontos, suja vale 100.',
+      'Quem acaba com as cartas da mão pega o morto da dupla e continua. Para bater (acabar o jogo), a dupla precisa ter pego o morto e ter ao menos uma canastra limpa.',
+      'Na contagem: soma-se o valor das cartas baixadas (A = 15, 2 = 10, 8 a K = 10, 3 a 7 = 5) mais as canastras, mais 100 para quem bateu; descontam-se as cartas que sobraram na mão e 100 se a dupla não pegou o morto.',
+      'Se o monte acabar, a rodada termina sem batida. Quem chegar a 500 pontos vence.'],
+    dicas: ['Pegue o lixo quando a carta de cima completa ou estende um jogo seu: são muitas cartas de uma vez.',
+      'Corra para pegar o morto: ele dá cartas novas e evita perder 100 pontos.',
+      'Não descarte cartas que encaixam nos jogos do adversário.'],
+    online: '1x1 ou duplas (4 jogadores); cada um vê só a própria mão.'
+  },
+  domino: {
+    obj: 'Bater (acabar com as peças da mão) e somar os pontos das peças dos adversários; vence quem chegar a 50.',
+    como: ['Toque numa peça sua que encaixe numa das pontas. Se ela servir nas duas, escolha a ponta nos botões (← Ponta do… / Ponta do… →).',
+      'Sem jogada: no 1x1, use Comprar peça; nas duplas (ou com o monte vazio), Passar a vez.'],
+    regras: ['Dominó de 28 peças (do 0-0 ao 6-6), 7 peças para cada jogador.',
+      'Na primeira rodada começa quem tem a carroça (peça dupla) mais alta, jogando-a.',
+      'Encaixa-se uma peça cujo número seja igual ao de uma das pontas da mesa.',
+      'Bateu: a dupla (ou jogador) ganha a soma das pintas que sobraram nas mãos dos adversários.',
+      'Jogo trancado (ninguém consegue jogar): ganha quem tiver menos pintas na mão e leva os pontos dos outros; empate na contagem não marca.',
+      'Quem bateu começa a rodada seguinte. Quem chegar a 50 pontos vence.'],
+    dicas: ['Jogue as carroças cedo: elas são as mais difíceis de encaixar depois.',
+      'Livre-se das peças pesadas (muitas pintas) quando o jogo puder trancar.',
+      'Observe quais números o adversário não tem (quando ele compra ou passa) e feche as pontas nesses números.'],
+    online: '1x1 ou duplas (4 jogadores).'
+  },
+  poker: {
+    obj: 'Ficar com todas as fichas da mesa no Texas Hold\'em.',
+    como: ['Na sua vez, use os botões: Passar (se ninguém apostou), Pagar, Apostar ou Aumentar (valor mínimo, meio pote ou pote), All-in (aposta tudo) ou Desistir.'],
+    regras: ['Cada jogador começa com 1000 fichas. Os blinds começam em 10/20 e dobram a cada 8 mãos.',
+      'Cada um recebe 2 cartas fechadas. Na mesa saem 5 cartas comunitárias: flop (3), turn (1) e river (1), com uma rodada de apostas antes e depois de cada etapa.',
+      'No final, vale a melhor combinação de 5 cartas entre as suas 2 e as 5 da mesa.',
+      'Ordem das mãos (da mais fraca à mais forte): carta alta, par, dois pares, trinca, sequência, flush, full house, quadra, straight flush, royal flush.',
+      'All-in cria potes paralelos: cada um só disputa o que conseguiu cobrir.',
+      'Quem fica sem fichas sai da mesa. Vence o último com fichas.'],
+    dicas: ['Jogue poucas mãos iniciais, mas jogue-as com força: pares altos, A-K, A-Q.',
+      'Posição importa: agir por último dá mais informação.',
+      'Antes de pagar, compare o tamanho do pote com o que você precisa pagar.'],
+    online: '2 a 6 jogadores; as cartas fechadas de cada um só aparecem para os outros no showdown.'
+  },
+  vinte1: {
+    obj: 'Terminar as 10 rodadas com mais fichas, vencendo a banca no 21 (blackjack).',
+    como: ['Monte a aposta com as fichas (+10, +50, +100; Limpar zera) e aperte Apostar. Depois use Pedir carta, Parar, Dobrar ou Dividir.'],
+    regras: ['As cartas de 2 a 10 valem o número; J, Q e K valem 10; o Ás vale 11 ou 1, o que for melhor.',
+      'Você tenta chegar mais perto de 21 que a banca sem passar. Passou de 21, estourou e perde a aposta.',
+      'Blackjack (Ás + carta de 10 nas duas primeiras) paga 3 para 2.',
+      'Dobrar: dobra a aposta e recebe só mais uma carta. Dividir: com duas cartas de mesmo valor, vira duas mãos (Ases divididos recebem uma carta cada).',
+      'A banca compra até ter 17 ou mais.',
+      'Cada um começa com 1000 fichas; quem ficar quase sem fichas recebe uma recarga de 500, que é descontada na contagem final.'],
+    dicas: ['Estratégia básica: pare com 17 ou mais; com 12 a 16, peça se a banca mostra 7 ou mais e pare se ela mostra 2 a 6.',
+      'Dobre com 11 (e com 10 se a banca não mostra 10 ou Ás).',
+      'Divida sempre Ases e 8s; nunca divida 10s.'],
+    online: 'De 1 a 5 jogadores, cada um contra a banca.'
+  },
+  roleta: {
+    obj: 'Terminar os 10 giros com mais fichas (fictícias) que os outros.',
+    como: ['Escolha o valor da ficha e toque na mesa onde quer apostar. Pode apostar em vários lugares.',
+      'Aperte Girar quando terminar. No modo online, a roda gira quando todos estiverem prontos ou depois de 30 segundos.'],
+    regras: ['Roleta europeia: números de 0 a 36.',
+      'Número exato paga 35 vezes a aposta. Dúzia e coluna pagam 2 vezes. Vermelho/preto, par/ímpar e metades (1-18 / 19-36) pagam 1 vez.',
+      'O zero não é par nem ímpar, nem vermelho nem preto: ele faz perder as apostas externas.',
+      'Cada um começa com 1000 fichas; quem fica quase sem fichas recebe recarga de 500, descontada no final.',
+      'Fichas de mentira: não há dinheiro envolvido.'],
+    dicas: ['Apostas externas (cores, par/ímpar) ganham quase metade das vezes mas pagam pouco.',
+      'Números exatos pagam muito, mas raramente. Distribua as fichas.',
+      'Não aposte tudo num giro: são 10 giros.'],
+    online: 'De 1 a 6 jogadores na mesma roda.'
+  },
+  velha: {
+    obj: 'Fazer três marcas em linha (reta ou diagonal) antes do adversário; quem ganhar 3 rodadas vence.',
+    como: ['Toque numa casa vazia. Ou use as teclas 1 a 9, como num teclado de telefone (1 é a casa do canto de cima à esquerda).'],
+    regras: ['X (azul) e O (vermelho) jogam alternadamente, uma marca por vez.',
+      'Três marcas iguais em linha ganham a rodada. Tabuleiro cheio sem linha: deu velha, ninguém pontua.',
+      'Quem começa alterna a cada rodada. Quem fizer 3 rodadas vence.'],
+    dicas: ['Comece pelo centro ou por um canto.',
+      'Sempre veja se o adversário ameaça completar uma linha e bloqueie.',
+      'Crie duas ameaças ao mesmo tempo: ele só consegue bloquear uma. Contra a CPU no Difícil, o melhor que dá é empatar.'],
+    online: '2 jogadores.'
+  },
+  ppt: {
+    obj: 'Fazer 3 pontos no pedra, papel e tesoura (jokenpô).',
+    como: ['Escolha em segredo: clique numa das suas peças, use os botões ou as teclas 1 (pedra), 2 (papel) e 3 (tesoura).'],
+    regras: ['Os dois escolhem em segredo; na contagem "Jo… ken… pô!" as peças viram juntas.',
+      'Pedra quebra tesoura, tesoura corta papel, papel embrulha pedra. Escolhas iguais empatam (ninguém pontua).',
+      'Quem fizer 3 pontos vence.'],
+    dicas: ['Muita gente repete a jogada que acabou de ganhar e troca a que perdeu: use isso.',
+      'Seja imprevisível: a CPU no Difícil aprende os seus padrões.'],
+    online: '2 jogadores; a escolha do outro só aparece quando as peças viram.'
+  },
+  forca: {
+    obj: 'Descobrir a palavra secreta antes de completar o boneco; quem fizer 3 pontos vence.',
+    como: ['Quem adivinha escolhe letras no teclado da tela ou no teclado do computador.',
+      'Quem escolhe a palavra (online) digita na janela, com uma dica opcional, ou usa Sortear uma para mim.'],
+    regras: ['Contra a CPU, ela escolhe a palavra (e mostra a categoria como dica) e você adivinha.',
+      'Online, um escolhe e o outro adivinha; os papéis trocam a cada rodada.',
+      'Letra certa aparece em todas as posições. Letra errada desenha uma parte do boneco (6 erros completam).',
+      'Acentos e ç não importam para chutar: o A revela também Á, Ã e Â; o C revela Ç.',
+      'Descobriu a palavra: ponto de quem adivinhou. Enforcou: ponto de quem escolheu. Quem fizer 3 pontos vence.'],
+    dicas: ['Comece pelas vogais A, E e O e pelas consoantes mais comuns: S, R, N, M.',
+      'Use a dica e o tamanho da palavra para pensar em candidatas.',
+      'Ao escolher a palavra, prefira letras raras (X, Z, J) e palavras sem vogais repetidas.'],
+    online: '2 jogadores; a palavra só é enviada para quem a escolheu.'
+  },
+  parimpar: {
+    obj: 'Fazer 3 pontos no par ou ímpar.',
+    como: ['Quem escolhe aperta Par ou Ímpar.',
+      'Depois os dois escolhem em segredo de 0 a 5 dedos (botões ou teclas 0 a 5).'],
+    regras: ['Quem não escolheu fica com o contrário.',
+      'Na contagem "Par… ou… ímpar!" as mãos abrem juntas e os dedos são somados.',
+      'Soma par: ponto de quem pediu par. Soma ímpar: ponto de quem pediu ímpar.',
+      'Quem escolhe alterna a cada rodada. Quem fizer 3 pontos vence.'],
+    dicas: ['É um jogo de sorte: se você escolher ao acaso, ninguém consegue ter vantagem sobre você.',
+      'Se perceber que o adversário mostra quase sempre números pares (ou ímpares), escolha o seu número para cair na paridade que você pediu.'],
+    online: '2 jogadores; o número do outro só aparece quando as mãos abrem.'
+  },
+  moeda: {
+    obj: 'Fazer 3 pontos no cara ou coroa.',
+    como: ['Quem pede escolhe Cara ou Coroa.',
+      'O outro joga a moeda: botão Jogar a moeda, clique na mesa ou Espaço.'],
+    regras: ['A moeda gira no ar e cai com a face sorteada para cima. Cara é a efígie; coroa é o lado do valor (1 real).',
+      'Acertou: ponto de quem pediu. Errou: ponto de quem jogou.',
+      'Quem pede alterna a cada rodada. Quem fizer 3 pontos vence.'],
+    dicas: ['É sorte pura: cada face tem a mesma chance, não importa o que saiu antes.'],
+    online: '2 jogadores; o sorteio é feito uma vez e todos veem a mesma moeda.'
+  },
+  purrinha: {
+    obj: 'Largar todos os seus palitos acertando o total escondido nas mãos.',
+    como: ['Ao começar, escolha como a partida termina (também dá para mudar no painel, em Fim).',
+      'Esconda de 0 até os palitos que você tem (botões ou teclas).',
+      'Na sua vez, chute o total: os botões mostram só os totais possíveis e ainda não chutados.',
+      'Com as mãos abertas, confira e aperte Próxima rodada.'],
+    regras: ['Cada jogador começa com 3 palitos. A reserva fica na caixinha de fósforo; a mão fica sobre o círculo.',
+      'Todos escondem; depois, na ordem, cada um chuta o total de palitos de todas as mãos. Não vale repetir um chute já dado.',
+      'As mãos abrem: quem acertou o total larga um palito. Se ninguém acertar, ninguém larga.',
+      'Quem acertou começa chutando na rodada seguinte; se ninguém acertou, começa o próximo.',
+      'Fim "1º que zerar": quem largar todos os palitos primeiro vence. Fim "Até o último": quem zera sai salvo e o jogo continua; o último com palitos perde.'],
+    dicas: ['O total vai do que você tem na mão até isso mais todos os palitos dos outros: conte antes de chutar.',
+      'Quem chuta depois tem mais informação: o chute de cada um dá uma pista do que ele escondeu.',
+      'Esconder 0 ou o máximo pode confundir quem tenta ler os seus chutes.'],
+    online: '2 a 6 jogadores; cada mão só aparece para os outros quando todas abrem.'
+  }
+};
+
 const GAMES = { pong: Pong, toto: Toto, pool: Pool, botao: Botao, damas: Damas, xadrez: Xadrez, gamao: Gamao, oito: Oito, truco: Truco, poker: Poker, buraco: Buraco, vinte1: Vinte1, airhockey: AirHockey, domino: Domino, ludo: Ludo, roleta: Roleta, general: General, sueca: Sueca, naval: Naval, velha: Velha, ppt: Jokenpo, forca: Forca, dardos: Dardos, parimpar: ParImpar, moeda: CaraCoroa, purrinha: Purrinha };
 
 // ================= runtime =================
@@ -7050,6 +7440,50 @@ document.querySelectorAll('.card[data-game]').forEach(c => c.addEventListener('c
   markCards();
   if (mode === 'menu') { buildGame(selGame); newMatch(prefSeats(selGame)); }
 }));
+// ---- manual ("Como jogar") ----
+let manPaused = false;
+function playersText(id) {
+  const st = GAMES[id].seats || [2], lo = Math.min(...st), hi = Math.max(...st);
+  const n = lo === hi ? lo + (lo === 1 ? ' jogador' : ' jogadores') : (hi - lo + 1 === st.length ? lo + ' a ' + hi : st.join(' ou ')) + ' jogadores';   // 2 a 6, or 2 ou 4
+  return n + (GAMES[id].seatLabel ? ' (' + st.map(v => GAMES[id].seatLabel(v)).join(' ou ') + ')' : '');
+}
+function fillManual(id) {
+  const M = MANUAL[id], card = document.querySelector('.card[data-game="' + id + '"]'), cat = card.closest('.cat');
+  $('manIcon').innerHTML = card.querySelector('svg').outerHTML;
+  $('manCat').textContent = document.querySelector('.tabs [data-cat="' + cat.dataset.cat + '"]').firstChild.textContent.trim();
+  $('manTitle').textContent = GAME_NAMES[id];
+  $('manMeta').textContent = playersText(id) + ' · contra a CPU ou online';
+  $('manPick').value = id;
+  const body = $('manBody'); body.textContent = '';
+  const obj = document.createElement('p'); obj.className = 'manobj'; obj.textContent = M.obj; body.append(obj);
+  const section = (title, items) => {
+    const h = document.createElement('h3'); h.textContent = title; body.append(h);
+    if (typeof items === 'string') { const pp = document.createElement('p'); pp.textContent = items; body.append(pp); return; }
+    const ul = document.createElement('ul'); for (const t of items) { const li = document.createElement('li'); li.textContent = t; ul.append(li); } body.append(ul);
+  };
+  section('Como jogar', M.como); section('Regras', M.regras); section('Estratégia e dicas', M.dicas); section('Jogando online', M.online);
+  body.scrollTop = 0;
+}
+function openManual(id) {
+  if (!$('manPick').options.length) {   // every game, grouped by the home tabs
+    document.querySelectorAll('#cards .cat').forEach(sec => {
+      const og = document.createElement('optgroup'); og.label = document.querySelector('.tabs [data-cat="' + sec.dataset.cat + '"]').firstChild.textContent.trim();
+      sec.querySelectorAll('.card[data-game]').forEach(c => { const o = document.createElement('option'); o.value = c.dataset.game; o.textContent = GAME_NAMES[c.dataset.game]; og.append(o); });
+      $('manPick').append(og);
+    });
+  }
+  manPaused = mode === 'cpu' && !paused && $('over').hidden; if (manPaused) togglePause(true);   // reading the rules mid-game stops the clock
+  fillManual(id); $('manual').hidden = false; $('btnManClose').focus();
+}
+function closeManual() { $('manual').hidden = true; if (manPaused && paused) togglePause(false); manPaused = false; if (mode !== 'menu') canvas.focus(); }
+$('btnHow').onclick = () => openManual(selGame);
+$('btnHowIn').onclick = () => openManual(G ? G.id : selGame);
+$('btnManClose').onclick = closeManual;
+$('manPick').onchange = e => fillManual(e.target.value);
+$('manual').addEventListener('click', e => { if (e.target.id === 'manual') closeManual(); });
+// while the manual is open the keyboard belongs to it: Esc closes, nothing reaches the game
+addEventListener('keydown', e => { if ($('manual').hidden) return; if (e.key === 'Escape') { e.preventDefault(); closeManual(); } e.stopImmediatePropagation(); }, true);
+
 // games with a rule to pick ask for it right when the match starts (the side panel keeps the same choice)
 function askOption(then) {
   const o = GAMES[selGame].option; if (!o) return then();
